@@ -46,8 +46,20 @@ target_link_libraries(test_simple tinydb_core)
 add_executable(test_value tests/test_value.cpp)
 target_link_libraries(test_value tinydb_core)
 
+add_executable(test_table tests/test_table.cpp)
+target_link_libraries(test_table tinydb_core)
+
+add_executable(test_database tests/test_database.cpp)
+target_link_libraries(test_database tinydb_core)
+
+add_executable(test_condition tests/test_condition.cpp)
+target_link_libraries(test_condition tinydb_core)
+
+add_executable(test_lexer tests/test_lexer.cpp)
+target_link_libraries(test_lexer tinydb_core)
+
 # 设置可执行文件输出目录
-set_target_properties(test_simple test_value PROPERTIES
+set_target_properties(test_simple test_value test_table test_database test_condition test_lexer PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
 )
 
