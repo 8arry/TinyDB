@@ -35,7 +35,11 @@ enum class DataType : std::uint8_t {
 
 // C++23 concept for value types
 template<typename T>
-concept ValueType = std::same_as<T, int> || std::same_as<T, std::string>;
+concept ValueType = std::same_as<T, int> || 
+                   std::same_as<T, std::string> || 
+                   std::same_as<T, const char*> ||
+                   (std::is_array_v<std::remove_reference_t<T>> && 
+                    std::same_as<std::remove_extent_t<std::remove_reference_t<T>>, char>);
 
 // 类型安全的值类，使用C++23特性
 class Value {
