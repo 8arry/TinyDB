@@ -61,8 +61,10 @@ private:
     std::vector<std::unique_ptr<JoinClause>> parseJoins();
     std::unique_ptr<JoinClause> parseJoin();
     
-    // 条件解析
+    // 条件解析 - 支持逻辑运算符
     std::unique_ptr<tinydb::Condition> parseCondition();
+    std::unique_ptr<tinydb::Condition> parseLogicalOr();
+    std::unique_ptr<tinydb::Condition> parseLogicalAnd();
     std::unique_ptr<tinydb::Condition> parseComparisonCondition();
     
     // 数据类型解析

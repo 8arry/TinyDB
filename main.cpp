@@ -5,8 +5,11 @@
 #include <iomanip>
 #include <algorithm>
 #include <unordered_map>
+#include <cctype>
+#include <cstdlib>
 #include "libcore/database/database.hpp"
 #include "libcore/database/condition.hpp"
+#include "libcore/database/persistence.hpp"
 #include "libcore/sql/lexer.hpp"
 #include "libcore/sql/parser.hpp"
 
@@ -363,7 +366,106 @@ private:
         
         db_.deleteFrom(stmt->getTableName(), condition);
     }
+    
+public:
+    // 持久化支持方法
+    const Database& getDatabase() const { return db_; }
+    
+    void replaceDatabase(Database&& newDb) {
+        db_ = std::move(newDb);
+        std::cout << "Database replaced successfully." << std::endl;
+    }
 };
+
+// 处理特殊命令（导入导出等）
+bool handleSpecialCommand(const std::string& command, SQLExecutor& executor) {
+    // 去除前后空白
+    std::string trimmed = command;
+    trimmed.erase(0, trimmed.find_first_not_of(" \t\n\r"));
+    trimmed.erase(trimmed.find_last_not_of(" \t\n\r") + 1);
+    
+    // 转换为小写进行比较
+    std::string lowercaseCmd = trimmed;
+    std::transform(lowercaseCmd.begin(), lowercaseCmd.end(), lowercaseCmd.begin(), ::tolower);
+    
+    try {
+        // EXPORT DATABASE命令
+        if (lowercaseCmd.substr(0, 15) == "export database") {
+            size_t toPos = lowercaseCmd.find(" to ");
+            if (toPos != std::string::npos) {
+                std::string filename = trimmed.substr(toPos + 4);
+                // 移除引号
+                if (filename.front() == '"' && filename.back() == '"') {
+                    filename = filename.substr(1, filename.length() - 2);
+                }
+                
+                PersistenceManager::exportDatabase(executor.getDatabase(), filename);
+                return true;
+            }
+        }
+        
+        // IMPORT DATABASE命令
+        else if (lowercaseCmd.substr(0, 15) == "import database") {
+            size_t fromPos = lowercaseCmd.find(" from ");
+            if (fromPos != std::string::npos) {
+                std::string filename = trimmed.substr(fromPos + 6);
+                // 移除引号
+                if (filename.front() == '"' && filename.back() == '"') {
+                    filename = filename.substr(1, filename.length() - 2);
+                }
+                
+                try {
+                    Database newDb = PersistenceManager::importDatabase(filename);
+                    executor.replaceDatabase(std::move(newDb));
+                    return true;
+                } catch (const std::exception& e) {
+                    std::cout << "Import failed: " << e.what() << std::endl;
+                    return true; // 仍然处理了命令，只是失败了
+                }
+            }
+        }
+        
+        // HELP命令
+        else if (lowercaseCmd == "help" || lowercaseCmd == "\\h") {
+            std::cout << "\n=== TinyDB Help ===" << std::endl;
+            std::cout << "SQL Commands:" << std::endl;
+            std::cout << "  CREATE TABLE name (col1 type1, col2 type2, ...);" << std::endl;
+            std::cout << "  INSERT INTO table VALUES (val1, val2, ...);" << std::endl;
+            std::cout << "  SELECT col1, col2 FROM table [WHERE condition];" << std::endl;
+            std::cout << "  SELECT * FROM table1 INNER JOIN table2 ON condition;" << std::endl;
+            std::cout << "  UPDATE table SET col=val WHERE condition;" << std::endl;
+            std::cout << "  DELETE FROM table WHERE condition;" << std::endl;
+            std::cout << "\nWHERE Conditions:" << std::endl;
+            std::cout << "  Comparison: =, !=, <, >, <=, >=" << std::endl;
+            std::cout << "  Logical: AND, OR" << std::endl;
+            std::cout << "  Examples:" << std::endl;
+            std::cout << "    WHERE age > 18 AND department = \"IT\"" << std::endl;
+            std::cout << "    WHERE salary > 5000 OR age < 25" << std::endl;
+            std::cout << "    WHERE id = 1 AND age > 30 OR salary > 6000" << std::endl;
+            std::cout << "\nPersistence Commands:" << std::endl;
+            std::cout << "  EXPORT DATABASE TO \"filename.json\";" << std::endl;
+            std::cout << "  IMPORT DATABASE FROM \"filename.json\";" << std::endl;
+            std::cout << "\nOther Commands:" << std::endl;
+            std::cout << "  HELP or \\h - Show this help" << std::endl;
+            std::cout << "  QUIT or \\q - Exit the program" << std::endl;
+            std::cout << "\nData Types: int, str" << std::endl;
+            std::cout << "===================" << std::endl;
+            return true;
+        }
+        
+        // QUIT命令
+        else if (lowercaseCmd == "quit" || lowercaseCmd == "\\q" || lowercaseCmd == "exit") {
+            std::cout << "Goodbye!" << std::endl;
+            exit(0);
+        }
+        
+    } catch (const std::exception& e) {
+        std::cout << "Command failed: " << e.what() << std::endl;
+        return true;
+    }
+    
+    return false; // 不是特殊命令
+}
 
 int main() {
     SQLExecutor executor;
@@ -386,8 +488,10 @@ int main() {
         while (semicolonPos != std::string::npos) {
             std::string sql = currentStatement.substr(0, semicolonPos);
             
-            // 执行SQL语句
-            executor.execute(sql);
+            // 处理特殊命令或执行SQL语句
+            if (!handleSpecialCommand(sql, executor)) {
+                executor.execute(sql);
+            }
             
             // 移除已执行的部分
             currentStatement = currentStatement.substr(semicolonPos + 1);

@@ -284,9 +284,41 @@ ExpressionPtr Parser::parseColumn() {
     }
 }
 
-// 条件解析 - 简化版本，支持基本的比较操作
+// 条件解析 - 支持逻辑运算符，从最低优先级开始
 std::unique_ptr<tinydb::Condition> Parser::parseCondition() {
-    return parseComparisonCondition();
+    return parseLogicalOr();
+}
+
+// 解析OR条件（最低优先级）
+std::unique_ptr<tinydb::Condition> Parser::parseLogicalOr() {
+    auto left = parseLogicalAnd();
+    
+    while (match(TokenType::OR)) {
+        auto right = parseLogicalAnd();
+        left = std::make_unique<tinydb::LogicalCondition>(
+            std::move(left), 
+            tinydb::LogicalOp::OR, 
+            std::move(right)
+        );
+    }
+    
+    return left;
+}
+
+// 解析AND条件（中等优先级）
+std::unique_ptr<tinydb::Condition> Parser::parseLogicalAnd() {
+    auto left = parseComparisonCondition();
+    
+    while (match(TokenType::AND)) {
+        auto right = parseComparisonCondition();
+        left = std::make_unique<tinydb::LogicalCondition>(
+            std::move(left), 
+            tinydb::LogicalOp::AND, 
+            std::move(right)
+        );
+    }
+    
+    return left;
 }
 
 std::unique_ptr<tinydb::Condition> Parser::parseComparisonCondition() {
@@ -312,8 +344,16 @@ std::unique_ptr<tinydb::Condition> Parser::parseComparisonCondition() {
         op = tinydb::ComparisonOp::EQUAL;
     } else if (match(TokenType::NOT_EQUAL)) {
         op = tinydb::ComparisonOp::NOT_EQUAL;
+    } else if (match(TokenType::LESS_THAN)) {
+        op = tinydb::ComparisonOp::LESS_THAN;
+    } else if (match(TokenType::GREATER_THAN)) {
+        op = tinydb::ComparisonOp::GREATER_THAN;
+    } else if (match(TokenType::LESS_EQUAL)) {
+        op = tinydb::ComparisonOp::LESS_EQUAL;
+    } else if (match(TokenType::GREATER_EQUAL)) {
+        op = tinydb::ComparisonOp::GREATER_EQUAL;
     } else {
-        throw ParseError("Expected comparison operator (= or !=)", peek().position);
+        throw ParseError("Expected comparison operator (=, !=, <, >, <=, >=)", peek().position);
     }
     
     // 右操作数 - 可以是字面量或列名

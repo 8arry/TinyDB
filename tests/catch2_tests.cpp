@@ -3,9 +3,12 @@
 
 // 包含项目头文件
 #include "../libcore/database/database.hpp"
+#include "../libcore/database/persistence.hpp"
 #include "../libcore/sql/lexer.hpp"
 #include "../libcore/sql/parser.hpp"
 #include "../libcore/database/condition.hpp"
+#include <fstream>
+#include <cstdio>
 
 using namespace tinydb;
 using namespace tinydb::sql;
@@ -351,4 +354,434 @@ TEST_CASE("Edge Cases - Case Insensitive Keywords", "[edge][parser]") {
     
     REQUIRE(statement != nullptr);
     REQUIRE(statement->getType() == Statement::Type::SELECT);
+}
+
+// ========== 持久化功能测试 ==========
+
+TEST_CASE("Persistence - Export and Import Database", "[persistence][basic]") {
+    const std::string filename = "test_db_export.json";
+    
+    // 创建测试数据库
+    Database originalDb;
+    
+    // 创建用户表
+    std::vector<Column> userCols = {
+        {"id", DataType::INT},
+        {"name", DataType::STR},
+        {"age", DataType::INT}
+    };
+    originalDb.createTable("users", userCols);
+    
+    // 创建产品表
+    std::vector<Column> productCols = {
+        {"id", DataType::INT},
+        {"name", DataType::STR},
+        {"price", DataType::INT}
+    };
+    originalDb.createTable("products", productCols);
+    
+    // 插入测试数据
+    std::vector<Value> user1 = {Value(1), Value(std::string("Alice")), Value(25)};
+    std::vector<Value> user2 = {Value(2), Value(std::string("Bob")), Value(30)};
+    originalDb.insertInto("users", user1);
+    originalDb.insertInto("users", user2);
+    
+    std::vector<Value> product1 = {Value(1), Value(std::string("Laptop")), Value(1000)};
+    std::vector<Value> product2 = {Value(2), Value(std::string("Mouse")), Value(50)};
+    originalDb.insertInto("products", product1);
+    originalDb.insertInto("products", product2);
+    
+    // 导出数据库
+    REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
+    
+    // 导入数据库
+    Database importedDb;
+    REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
+    
+    // 验证表数量
+    REQUIRE(importedDb.getTableNames().size() == 2);
+    REQUIRE(importedDb.hasTable("users"));
+    REQUIRE(importedDb.hasTable("products"));
+    
+    // 验证用户表数据
+    auto userRows = importedDb.selectFrom("users", {"*"});
+    REQUIRE(userRows.size() == 2);
+    
+    // 验证产品表数据
+    auto productRows = importedDb.selectFrom("products", {"*"});
+    REQUIRE(productRows.size() == 2);
+    
+    // 清理测试文件
+    std::remove(filename.c_str());
+}
+
+TEST_CASE("Persistence - Empty Database Export/Import", "[persistence][empty]") {
+    const std::string filename = "test_empty_db.json";
+    
+    // 创建空数据库
+    Database originalDb;
+    
+    // 导出空数据库
+    REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
+    
+    // 导入空数据库
+    Database importedDb;
+    REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
+    
+    // 验证空数据库
+    REQUIRE(importedDb.getTableNames().empty());
+    REQUIRE(importedDb.getTableCount() == 0);
+    
+    // 清理测试文件
+    std::remove(filename.c_str());
+}
+
+TEST_CASE("Persistence - Table with Special Characters", "[persistence][special]") {
+    const std::string filename = "test_special_chars.json";
+    
+    Database originalDb;
+    
+    // 创建表
+    std::vector<Column> cols = {
+        {"id", DataType::INT},
+        {"text", DataType::STR}
+    };
+    originalDb.createTable("test_table", cols);
+    
+    // 插入包含特殊字符的数据
+    std::vector<Value> row1 = {Value(1), Value(std::string("Hello \"World\""))};
+    std::vector<Value> row2 = {Value(2), Value(std::string("Line1\nLine2"))};
+    std::vector<Value> row3 = {Value(3), Value(std::string("Tab\tSeparated"))};
+    
+    originalDb.insertInto("test_table", row1);
+    originalDb.insertInto("test_table", row2);
+    originalDb.insertInto("test_table", row3);
+    
+    // 导出和导入
+    REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
+    
+    Database importedDb;
+    REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
+    
+    // 验证数据
+    auto rows = importedDb.selectFrom("test_table", {"*"});
+    REQUIRE(rows.size() == 3);
+    
+    // 清理测试文件
+    std::remove(filename.c_str());
+}
+
+TEST_CASE("Persistence - Large Dataset", "[persistence][large]") {
+    const std::string filename = "test_large_dataset.json";
+    
+    Database originalDb;
+    
+    // 创建表
+    std::vector<Column> cols = {
+        {"id", DataType::INT},
+        {"name", DataType::STR},
+        {"value", DataType::INT}
+    };
+    originalDb.createTable("large_table", cols);
+    
+    // 插入大量数据
+    const int numRows = 100;
+    for (int i = 1; i <= numRows; ++i) {
+        std::vector<Value> row = {
+            Value(i),
+            Value(std::string("Item_") + std::to_string(i)),
+            Value(i * 10)
+        };
+        originalDb.insertInto("large_table", row);
+    }
+    
+    // 导出和导入
+    REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
+    
+    Database importedDb;
+    REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
+    
+    // 验证数据量
+    auto rows = importedDb.selectFrom("large_table", {"*"});
+    REQUIRE(rows.size() == numRows);
+    
+    // 清理测试文件
+    std::remove(filename.c_str());
+}
+
+// ========== 持久化错误处理测试 ==========
+
+TEST_CASE("Persistence - Export to Invalid Path", "[persistence][error]") {
+    Database db;
+    
+    // 尝试导出到无效路径
+    REQUIRE_THROWS_AS(
+        PersistenceManager::exportDatabase(db, "/invalid/path/test.json"),
+        PersistenceError
+    );
+}
+
+TEST_CASE("Persistence - Import Nonexistent File", "[persistence][error]") {
+    // 尝试导入不存在的文件
+    REQUIRE_THROWS_AS(
+        PersistenceManager::importDatabase("nonexistent_file.json"),
+        PersistenceError
+    );
+}
+
+TEST_CASE("Persistence - Import Invalid JSON", "[persistence][error]") {
+    const std::string filename = "test_invalid.json";
+    
+    // 创建无效的JSON文件
+    std::ofstream file(filename);
+    file << "{ invalid json content }";
+    file.close();
+    
+    // 尝试导入无效JSON
+    REQUIRE_THROWS_AS(
+        PersistenceManager::importDatabase(filename),
+        PersistenceError
+    );
+    
+    // 清理测试文件
+    std::remove(filename.c_str());
+}
+
+TEST_CASE("Persistence - Value Type Conversion", "[persistence][value]") {
+    // 测试JSON值转换
+    REQUIRE_NOTHROW({
+        Value intVal = PersistenceManager::jsonToValue("42", DataType::INT);
+        REQUIRE(intVal.getType() == DataType::INT);
+        REQUIRE(intVal.toString() == "42");
+    });
+    
+    REQUIRE_NOTHROW({
+        Value strVal = PersistenceManager::jsonToValue("Hello World", DataType::STR);
+        REQUIRE(strVal.getType() == DataType::STR);
+        REQUIRE(strVal.toString() == "Hello World");
+    });
+    
+    // 测试Value到JSON转换
+    REQUIRE_NOTHROW({
+        Value intVal(123);
+        std::string json = PersistenceManager::valueToJson(intVal);
+        REQUIRE(json == "123");
+    });
+    
+    REQUIRE_NOTHROW({
+        Value strVal(std::string("Test String"));
+        std::string json = PersistenceManager::valueToJson(strVal);
+        REQUIRE(json == "\"Test String\"");
+    });
+}
+
+// ========== 扩展WHERE条件测试 ==========
+
+TEST_CASE("Extended WHERE - Comparison Operators", "[where][comparison]") {
+    Database db;
+    
+    // 创建测试表
+    std::vector<Column> cols = {
+        {"id", DataType::INT},
+        {"value", DataType::INT},
+        {"name", DataType::STR}
+    };
+    db.createTable("numbers", cols);
+    
+    // 插入测试数据
+    std::vector<Value> row1 = {Value(1), Value(10), Value(std::string("Ten"))};
+    std::vector<Value> row2 = {Value(2), Value(20), Value(std::string("Twenty"))};
+    std::vector<Value> row3 = {Value(3), Value(30), Value(std::string("Thirty"))};
+    std::vector<Value> row4 = {Value(4), Value(15), Value(std::string("Fifteen"))};
+    
+    db.insertInto("numbers", row1);
+    db.insertInto("numbers", row2);
+    db.insertInto("numbers", row3);
+    db.insertInto("numbers", row4);
+    
+    // 验证数据插入
+    auto allRows = db.selectFrom("numbers", {"*"});
+    REQUIRE(allRows.size() == 4);
+}
+
+TEST_CASE("Extended WHERE - Greater Than", "[where][gt]") {
+    std::string sql = "SELECT * FROM numbers WHERE value > 20;";
+    
+    Lexer lexer(sql);
+    auto tokens = lexer.tokenize();
+    Parser parser(std::move(tokens));
+    auto statement = parser.parse();
+    
+    REQUIRE(statement != nullptr);
+    REQUIRE(statement->getType() == Statement::Type::SELECT);
+    
+    auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+    REQUIRE(selectStmt->getWhereCondition() != nullptr);
+}
+
+TEST_CASE("Extended WHERE - Less Than", "[where][lt]") {
+    std::string sql = "SELECT * FROM numbers WHERE value < 20;";
+    
+    Lexer lexer(sql);
+    auto tokens = lexer.tokenize();
+    Parser parser(std::move(tokens));
+    auto statement = parser.parse();
+    
+    REQUIRE(statement != nullptr);
+    REQUIRE(statement->getType() == Statement::Type::SELECT);
+    
+    auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+    REQUIRE(selectStmt->getWhereCondition() != nullptr);
+}
+
+TEST_CASE("Extended WHERE - Greater Than or Equal", "[where][gte]") {
+    std::string sql = "SELECT * FROM numbers WHERE value >= 20;";
+    
+    Lexer lexer(sql);
+    auto tokens = lexer.tokenize();
+    Parser parser(std::move(tokens));
+    auto statement = parser.parse();
+    
+    REQUIRE(statement != nullptr);
+    REQUIRE(statement->getType() == Statement::Type::SELECT);
+    
+    auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+    REQUIRE(selectStmt->getWhereCondition() != nullptr);
+}
+
+TEST_CASE("Extended WHERE - Less Than or Equal", "[where][lte]") {
+    std::string sql = "SELECT * FROM numbers WHERE value <= 20;";
+    
+    Lexer lexer(sql);
+    auto tokens = lexer.tokenize();
+    Parser parser(std::move(tokens));
+    auto statement = parser.parse();
+    
+    REQUIRE(statement != nullptr);
+    REQUIRE(statement->getType() == Statement::Type::SELECT);
+    
+    auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+    REQUIRE(selectStmt->getWhereCondition() != nullptr);
+}
+
+TEST_CASE("Extended WHERE - All Operators Parsing", "[where][all]") {
+    std::vector<std::string> testQueries = {
+        "SELECT * FROM test WHERE id = 1;",
+        "SELECT * FROM test WHERE id != 1;", 
+        "SELECT * FROM test WHERE id < 10;",
+        "SELECT * FROM test WHERE id > 5;",
+        "SELECT * FROM test WHERE id <= 15;",
+        "SELECT * FROM test WHERE id >= 3;"
+    };
+    
+    for (const auto& sql : testQueries) {
+        REQUIRE_NOTHROW({
+            Lexer lexer(sql);
+            auto tokens = lexer.tokenize();
+            Parser parser(std::move(tokens));
+            auto statement = parser.parse();
+            
+            REQUIRE(statement != nullptr);
+            REQUIRE(statement->getType() == Statement::Type::SELECT);
+            
+            auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+            REQUIRE(selectStmt->getWhereCondition() != nullptr);
+        });
+    }
+}
+
+// ========== 逻辑运算符测试 ==========
+
+TEST_CASE("Logical Operators - AND Parsing", "[where][logical][and]") {
+    std::string sql = "SELECT * FROM employees WHERE age > 25 AND department = \"IT\";";
+    
+    Lexer lexer(sql);
+    auto tokens = lexer.tokenize();
+    Parser parser(std::move(tokens));
+    auto statement = parser.parse();
+    
+    REQUIRE(statement != nullptr);
+    REQUIRE(statement->getType() == Statement::Type::SELECT);
+    
+    auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+    REQUIRE(selectStmt->getWhereCondition() != nullptr);
+}
+
+TEST_CASE("Logical Operators - OR Parsing", "[where][logical][or]") {
+    std::string sql = "SELECT * FROM employees WHERE salary > 6000 OR age < 25;";
+    
+    Lexer lexer(sql);
+    auto tokens = lexer.tokenize();
+    Parser parser(std::move(tokens));
+    auto statement = parser.parse();
+    
+    REQUIRE(statement != nullptr);
+    REQUIRE(statement->getType() == Statement::Type::SELECT);
+    
+    auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+    REQUIRE(selectStmt->getWhereCondition() != nullptr);
+}
+
+TEST_CASE("Logical Operators - Multiple AND", "[where][logical][multiple]") {
+    std::string sql = "SELECT * FROM test WHERE age >= 30 AND salary >= 7000 AND department = \"IT\";";
+    
+    Lexer lexer(sql);
+    auto tokens = lexer.tokenize();
+    Parser parser(std::move(tokens));
+    auto statement = parser.parse();
+    
+    REQUIRE(statement != nullptr);
+    REQUIRE(statement->getType() == Statement::Type::SELECT);
+    
+    auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+    REQUIRE(selectStmt->getWhereCondition() != nullptr);
+}
+
+TEST_CASE("Logical Operators - Mixed AND OR", "[where][logical][mixed]") {
+    std::vector<std::string> mixedQueries = {
+        "SELECT * FROM test WHERE age > 30 OR department = \"HR\";",
+        "SELECT * FROM test WHERE id = 1 AND age > 25 OR salary > 5000;",
+        "SELECT * FROM test WHERE department = \"IT\" OR department = \"HR\" AND age > 25;"
+    };
+    
+    for (const auto& sql : mixedQueries) {
+        REQUIRE_NOTHROW({
+            Lexer lexer(sql);
+            auto tokens = lexer.tokenize();
+            Parser parser(std::move(tokens));
+            auto statement = parser.parse();
+            
+            REQUIRE(statement != nullptr);
+            REQUIRE(statement->getType() == Statement::Type::SELECT);
+            
+            auto* selectStmt = static_cast<SelectStatement*>(statement.get());
+            REQUIRE(selectStmt->getWhereCondition() != nullptr);
+        });
+    }
+}
+
+TEST_CASE("Logical Operators - Execution Test", "[where][logical][execution]") {
+    Database db;
+    
+    // 创建测试表
+    std::vector<Column> cols = {
+        {"id", DataType::INT},
+        {"age", DataType::INT},
+        {"salary", DataType::INT},
+        {"department", DataType::STR}
+    };
+    db.createTable("employees", cols);
+    
+    // 插入测试数据
+    std::vector<Value> row1 = {Value(1), Value(25), Value(5000), Value(std::string("IT"))};
+    std::vector<Value> row2 = {Value(2), Value(30), Value(6000), Value(std::string("HR"))};
+    std::vector<Value> row3 = {Value(3), Value(35), Value(7000), Value(std::string("IT"))};
+    
+    db.insertInto("employees", row1);
+    db.insertInto("employees", row2);
+    db.insertInto("employees", row3);
+    
+    // 验证数据插入
+    auto allRows = db.selectFrom("employees", {"*"});
+    REQUIRE(allRows.size() == 3);
 }
