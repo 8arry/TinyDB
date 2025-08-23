@@ -1,0 +1,20 @@
+---
+Language: Cpp
+# Based on LLVM style
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 100
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+PointerAlignment: Left
+ReferenceAlignment: Left
+SpaceAfterCStyleCast: false
+SpaceBeforeParens: ControlStatements
+IndentCaseLabels: true
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 4
+NamespaceIndentation: None
+AccessModifierOffset: -4
