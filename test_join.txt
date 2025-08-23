@@ -1,0 +1,34 @@
+-- 测试INNER JOIN功能
+
+-- 创建两个相关的表
+CREATE TABLE employees (
+    id int,
+    name str,
+    department_id int
+);
+
+CREATE TABLE departments (
+    id int,
+    name str
+);
+
+-- 插入测试数据
+INSERT INTO employees VALUES (1, "Alice", 1);
+INSERT INTO employees VALUES (2, "Bob", 2);
+INSERT INTO employees VALUES (3, "Charlie", 1);
+
+INSERT INTO departments VALUES (1, "Engineering");
+INSERT INTO departments VALUES (2, "Marketing");
+INSERT INTO departments VALUES (3, "HR");
+
+-- 测试简单的INNER JOIN
+SELECT employees.name, departments.name
+FROM employees
+INNER JOIN departments
+ON employees.department_id = departments.id;
+
+-- 测试SELECT * WITH JOIN
+SELECT *
+FROM employees
+INNER JOIN departments
+ON employees.department_id = departments.id;

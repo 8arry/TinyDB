@@ -148,7 +148,15 @@ private:
     }
     
     void executeSelect(sql::SelectStatement* stmt) {
-        // 构建WHERE条件
+        if (stmt->hasJoins()) {
+            executeSelectWithJoin(stmt);
+        } else {
+            executeSelectSimple(stmt);
+        }
+    }
+    
+    void executeSelectSimple(sql::SelectStatement* stmt) {
+        // 简单SELECT（无JOIN）
         std::function<bool(const tinydb::Row&, const tinydb::Table&)> condition = nullptr;
         if (stmt->getWhereCondition()) {
             condition = tinydb::ConditionAdapter::toLambda(*stmt->getWhereCondition());
@@ -176,6 +184,158 @@ private:
         
         // 打印ASCII表格
         TableFormatter::printTable(columnNames, rows);
+    }
+    
+    void executeSelectWithJoin(sql::SelectStatement* stmt) {
+        // JOIN查询实现
+        auto& mainTable = db_.getTable(stmt->getTableName());
+        auto mainRows = db_.selectFrom(stmt->getTableName(), {"*"});
+        
+        // 构建结果行
+        std::vector<tinydb::Row> resultRows;
+        
+        // 对每个主表行进行JOIN处理
+        for (const auto& mainRow : mainRows) {
+            executeJoinForRow(stmt, mainTable, mainRow, resultRows);
+        }
+        
+        // 应用WHERE条件
+        if (stmt->getWhereCondition()) {
+            auto condition = tinydb::ConditionAdapter::toLambda(*stmt->getWhereCondition());
+            auto filteredRows = std::vector<tinydb::Row>();
+            for (const auto& row : resultRows) {
+                // 为JOIN结果创建一个临时表来评估条件
+                tinydb::Table tempTable("temp", {});
+                if (condition(row, tempTable)) {
+                    filteredRows.push_back(row);
+                }
+            }
+            resultRows = std::move(filteredRows);
+        }
+        
+        // 构建列名和选择列
+        std::vector<std::string> allColumnNames = buildJoinColumnNames(stmt);
+        std::vector<std::string> selectedColumns;
+        
+        if (stmt->isSelectAll()) {
+            selectedColumns = allColumnNames;
+        } else {
+            selectedColumns = stmt->getColumns();
+        }
+        
+        // 提取选定的列
+        std::vector<tinydb::Row> finalRows = extractSelectedColumns(resultRows, allColumnNames, selectedColumns);
+        
+        // 打印结果
+        TableFormatter::printTable(selectedColumns, finalRows);
+    }
+    
+    void executeJoinForRow(sql::SelectStatement* stmt, const tinydb::Table& mainTable, 
+                          const tinydb::Row& mainRow, std::vector<tinydb::Row>& resultRows) {
+        // 递归处理JOIN链
+        if (stmt->getJoins().empty()) {
+            resultRows.push_back(mainRow);
+            return;
+        }
+        
+        // 处理第一个JOIN（简化：只支持单个JOIN）
+        const auto& joinClause = stmt->getJoins()[0];
+        auto& joinTable = db_.getTable(joinClause->getTableName());
+        auto joinRows = db_.selectFrom(joinClause->getTableName(), {"*"});
+        
+        // 对每个JOIN表的行进行匹配
+        for (const auto& joinRow : joinRows) {
+            if (evaluateJoinCondition(*joinClause->getOnCondition(), mainTable, mainRow, joinTable, joinRow)) {
+                // 合并行
+                auto combinedRow = combineRows(mainTable, mainRow, joinTable, joinRow);
+                resultRows.push_back(combinedRow);
+            }
+        }
+    }
+    
+    bool evaluateJoinCondition(const tinydb::Condition& condition, 
+                              const tinydb::Table& leftTable, const tinydb::Row& leftRow,
+                              const tinydb::Table& rightTable, const tinydb::Row& rightRow) {
+        // 创建一个组合行来评估条件
+        auto combinedRow = combineRows(leftTable, leftRow, rightTable, rightRow);
+        
+        // 使用ConditionAdapter评估条件
+        auto lambda = tinydb::ConditionAdapter::toLambda(condition);
+        tinydb::Table tempTable("temp", {});
+        return lambda(combinedRow, tempTable);
+    }
+    
+    tinydb::Row combineRows(const tinydb::Table& leftTable, const tinydb::Row& leftRow,
+                           const tinydb::Table& rightTable, const tinydb::Row& rightRow) {
+        std::vector<tinydb::Value> combinedValues;
+        
+        // 添加左表的所有列
+        for (const auto& value : leftRow.getValues()) {
+            combinedValues.push_back(value);
+        }
+        
+        // 添加右表的所有列
+        for (const auto& value : rightRow.getValues()) {
+            combinedValues.push_back(value);
+        }
+        
+        return tinydb::Row(combinedValues);
+    }
+    
+    std::vector<std::string> buildJoinColumnNames(sql::SelectStatement* stmt) {
+        std::vector<std::string> columnNames;
+        
+        // 添加主表列名
+        auto& mainTable = db_.getTable(stmt->getTableName());
+        auto mainSchema = mainTable.getSchema();
+        for (const auto& col : mainSchema) {
+            columnNames.push_back(stmt->getTableName() + "." + col.name);
+        }
+        
+        // 添加JOIN表列名
+        for (const auto& joinClause : stmt->getJoins()) {
+            auto& joinTable = db_.getTable(joinClause->getTableName());
+            auto joinSchema = joinTable.getSchema();
+            for (const auto& col : joinSchema) {
+                columnNames.push_back(joinClause->getTableName() + "." + col.name);
+            }
+        }
+        
+        return columnNames;
+    }
+    
+    std::vector<tinydb::Row> extractSelectedColumns(const std::vector<tinydb::Row>& rows,
+                                                   const std::vector<std::string>& allColumnNames,
+                                                   const std::vector<std::string>& selectedColumns) {
+        if (selectedColumns.empty() || rows.empty()) {
+            return rows;
+        }
+        
+        // 找到选中列的索引
+        std::vector<size_t> selectedIndices;
+        for (const auto& selectedCol : selectedColumns) {
+            auto it = std::find(allColumnNames.begin(), allColumnNames.end(), selectedCol);
+            if (it != allColumnNames.end()) {
+                selectedIndices.push_back(std::distance(allColumnNames.begin(), it));
+            }
+        }
+        
+        // 提取选中的列
+        std::vector<tinydb::Row> result;
+        for (const auto& row : rows) {
+            std::vector<tinydb::Value> selectedValues;
+            const auto& allValues = row.getValues();
+            
+            for (size_t index : selectedIndices) {
+                if (index < allValues.size()) {
+                    selectedValues.push_back(allValues[index]);
+                }
+            }
+            
+            result.emplace_back(selectedValues);
+        }
+        
+        return result;
     }
     
     void executeUpdate(sql::UpdateStatement* stmt) {

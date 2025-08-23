@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# 启用CTest
+enable_testing()
+
 # 编译器特定设置
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # GCC 12+ 支持C++23
@@ -61,8 +64,21 @@ target_link_libraries(test_lexer tinydb_core)
 add_executable(test_parser tests/test_parser.cpp)
 target_link_libraries(test_parser tinydb_core)
 
+add_executable(test_join tests/test_join.cpp)
+target_link_libraries(test_join tinydb_core)
+
+# Catch2测试
+add_executable(catch2_tests tests/catch2_tests.cpp)
+target_link_libraries(catch2_tests tinydb_core)
+set_target_properties(catch2_tests PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
+)
+
+# 添加CTest支持
+add_test(NAME TinyDB_Tests COMMAND catch2_tests)
+
 # 设置可执行文件输出目录
-set_target_properties(test_simple test_value test_table test_database test_condition test_lexer test_parser PROPERTIES
+set_target_properties(test_simple test_value test_table test_database test_condition test_lexer test_parser test_join PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
 )
 

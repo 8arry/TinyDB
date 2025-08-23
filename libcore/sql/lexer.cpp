@@ -59,6 +59,9 @@ void Lexer::scanToken(bool includeWhitespace) {
         case '/':
             addToken(TokenType::SLASH);
             break;
+        case '.':
+            addToken(TokenType::DOT);
+            break;
             
         // 可能的双字符操作符
         case '=':

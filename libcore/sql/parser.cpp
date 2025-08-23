@@ -172,13 +172,25 @@ std::unique_ptr<SelectStatement> Parser::parseSelect() {
         // SELECT * - 空列表表示选择所有列
     } else {
         do {
+            // 支持限定列名：table.column 或 column
             Token columnName = consume(TokenType::IDENTIFIER, "Expected column name");
-            columns.push_back(columnName.getStringValue());
+            std::string fullColumnName = columnName.getStringValue();
+            
+            // 检查是否有表名限定符（table.column）
+            if (match(TokenType::DOT)) {
+                Token actualColumnName = consume(TokenType::IDENTIFIER, "Expected column name after '.'");
+                fullColumnName = fullColumnName + "." + actualColumnName.getStringValue();
+            }
+            
+            columns.push_back(fullColumnName);
         } while (match(TokenType::COMMA));
     }
     
     consume(TokenType::FROM, "Expected 'FROM'");
     Token tableName = consume(TokenType::IDENTIFIER, "Expected table name");
+    
+    // 解析JOIN子句
+    std::vector<std::unique_ptr<JoinClause>> joins = parseJoins();
     
     // WHERE子句解析
     std::unique_ptr<tinydb::Condition> whereCondition = nullptr;
@@ -186,7 +198,12 @@ std::unique_ptr<SelectStatement> Parser::parseSelect() {
         whereCondition = parseCondition();
     }
     
-    return std::make_unique<SelectStatement>(std::move(columns), tableName.getStringValue(), std::move(whereCondition));
+    return std::make_unique<SelectStatement>(
+        std::move(columns), 
+        tableName.getStringValue(), 
+        std::move(joins),
+        std::move(whereCondition)
+    );
 }
 
 std::unique_ptr<UpdateStatement> Parser::parseUpdate() {
@@ -253,8 +270,18 @@ ExpressionPtr Parser::parseLiteral() {
 }
 
 ExpressionPtr Parser::parseColumn() {
-    Token columnName = consume(TokenType::IDENTIFIER, "Expected column name");
-    return std::make_unique<ColumnExpression>(columnName.getStringValue());
+    Token firstToken = consume(TokenType::IDENTIFIER, "Expected column name");
+    
+    // 检查是否有表名限定符（table.column）
+    if (match(TokenType::DOT)) {
+        Token columnName = consume(TokenType::IDENTIFIER, "Expected column name after '.'");
+        return std::make_unique<ColumnExpression>(
+            firstToken.getStringValue(),   // table name
+            columnName.getStringValue()    // column name
+        );
+    } else {
+        return std::make_unique<ColumnExpression>(firstToken.getStringValue());
+    }
 }
 
 // 条件解析 - 简化版本，支持基本的比较操作
@@ -263,13 +290,21 @@ std::unique_ptr<tinydb::Condition> Parser::parseCondition() {
 }
 
 std::unique_ptr<tinydb::Condition> Parser::parseComparisonCondition() {
-    // 左操作数 - 必须是列名
+    // 左操作数 - 必须是列名，支持限定列名
     if (!check(TokenType::IDENTIFIER)) {
         throw ParseError("Expected column name in condition", peek().position);
     }
     
     Token leftToken = advance();
-    auto leftValue = tinydb::ConditionValue::column(leftToken.getStringValue());
+    std::string leftColumnName = leftToken.getStringValue();
+    
+    // 检查是否有表名限定符
+    if (match(TokenType::DOT)) {
+        Token columnToken = consume(TokenType::IDENTIFIER, "Expected column name after '.'");
+        leftColumnName = leftColumnName + "." + columnToken.getStringValue();
+    }
+    
+    auto leftValue = tinydb::ConditionValue::column(leftColumnName);
     
     // 操作符
     tinydb::ComparisonOp op;
@@ -290,7 +325,15 @@ std::unique_ptr<tinydb::Condition> Parser::parseComparisonCondition() {
         std::string value = previous().getStringValue();
         rightValue = tinydb::ConditionValue::literal(value);
     } else if (match(TokenType::IDENTIFIER)) {
-        rightValue = tinydb::ConditionValue::column(previous().getStringValue());
+        std::string rightColumnName = previous().getStringValue();
+        
+        // 检查是否有表名限定符
+        if (match(TokenType::DOT)) {
+            Token columnToken = consume(TokenType::IDENTIFIER, "Expected column name after '.'");
+            rightColumnName = rightColumnName + "." + columnToken.getStringValue();
+        }
+        
+        rightValue = tinydb::ConditionValue::column(rightColumnName);
     } else {
         throw ParseError("Expected value or column name", peek().position);
     }
@@ -308,6 +351,33 @@ tinydb::DataType Parser::parseDataType() {
     }
     
     throw ParseError("Expected data type (int or str)", peek().position);
+}
+
+// JOIN解析
+std::vector<std::unique_ptr<JoinClause>> Parser::parseJoins() {
+    std::vector<std::unique_ptr<JoinClause>> joins;
+    
+    while (check(TokenType::INNER)) {
+        joins.push_back(parseJoin());
+    }
+    
+    return joins;
+}
+
+std::unique_ptr<JoinClause> Parser::parseJoin() {
+    consume(TokenType::INNER, "Expected 'INNER'");
+    consume(TokenType::JOIN, "Expected 'JOIN'");
+    
+    Token joinTable = consume(TokenType::IDENTIFIER, "Expected table name");
+    
+    consume(TokenType::ON, "Expected 'ON'");
+    auto onCondition = parseCondition();
+    
+    return std::make_unique<JoinClause>(
+        JoinClause::JoinType::INNER,
+        joinTable.getStringValue(),
+        std::move(onCondition)
+    );
 }
 
 // 错误恢复

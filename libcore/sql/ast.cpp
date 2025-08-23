@@ -26,9 +26,17 @@ tinydb::Value ColumnExpression::evaluate() const {
 
 std::string ColumnExpression::toString() const {
 #ifdef HAS_FORMAT
-    return std::format("Column({})", column_name_);
+    if (isQualified()) {
+        return std::format("Column({}.{})", table_name_, column_name_);
+    } else {
+        return std::format("Column({})", column_name_);
+    }
 #else
-    return "Column(" + column_name_ + ")";
+    if (isQualified()) {
+        return "Column(" + table_name_ + "." + column_name_ + ")";
+    } else {
+        return "Column(" + column_name_ + ")";
+    }
 #endif
 }
 
@@ -70,6 +78,25 @@ std::string InsertStatement::toString() const {
     return result;
 }
 
+// JoinClause实现
+JoinClause::~JoinClause() {
+    delete on_condition_;
+}
+
+std::string JoinClause::toString() const {
+    std::string result;
+    switch (join_type_) {
+        case JoinType::INNER:
+            result = "INNER JOIN ";
+            break;
+    }
+    result += table_name_;
+    if (on_condition_) {
+        result += " ON " + on_condition_->toString();
+    }
+    return result;
+}
+
 // SelectStatement实现
 SelectStatement::~SelectStatement() {
     delete where_condition_;
@@ -88,6 +115,11 @@ std::string SelectStatement::toString() const {
     }
     
     result += " FROM " + table_name_;
+    
+    // 添加JOIN子句
+    for (const auto& join : joins_) {
+        result += " " + join->toString();
+    }
     
     if (where_condition_) {
         result += " WHERE " + where_condition_->toString();

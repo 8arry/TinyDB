@@ -24,6 +24,9 @@ enum class TokenType {
     AND,
     OR,
     NOT,
+    INNER,      // INNER (for INNER JOIN)
+    JOIN,       // JOIN
+    ON,         // ON (for JOIN condition)
     
     // 数据类型关键字 (符合项目要求)
     INT,        // int
@@ -49,6 +52,7 @@ enum class TokenType {
     RIGHT_PAREN,    // )
     COMMA,          // ,
     SEMICOLON,      // ;
+    DOT,            // . (for table.column)
     
     // 特殊标记
     WHITESPACE,     // 空白符
@@ -118,7 +122,7 @@ public:
         static const std::unordered_set<std::string> keywords = {
             "CREATE", "TABLE", "INSERT", "INTO", "VALUES",
             "SELECT", "FROM", "WHERE", "UPDATE", "SET", "DELETE",
-            "AND", "OR", "NOT", "INT", "STRING"
+            "AND", "OR", "NOT", "INNER", "JOIN", "ON", "INT", "STR"
         };
         return keywords;
     }
@@ -146,6 +150,9 @@ public:
         if (upperWord == "AND") return TokenType::AND;
         if (upperWord == "OR") return TokenType::OR;
         if (upperWord == "NOT") return TokenType::NOT;
+        if (upperWord == "INNER") return TokenType::INNER;
+        if (upperWord == "JOIN") return TokenType::JOIN;
+        if (upperWord == "ON") return TokenType::ON;
         if (upperWord == "INT") return TokenType::INT;
         if (upperWord == "STR") return TokenType::STR;
         
@@ -169,6 +176,9 @@ public:
             case TokenType::AND: return "AND";
             case TokenType::OR: return "OR";
             case TokenType::NOT: return "NOT";
+            case TokenType::INNER: return "INNER";
+            case TokenType::JOIN: return "JOIN";
+            case TokenType::ON: return "ON";
             case TokenType::INT: return "INT";
             case TokenType::STR: return "STR";
             case TokenType::IDENTIFIER: return "IDENTIFIER";
@@ -186,6 +196,7 @@ public:
             case TokenType::RIGHT_PAREN: return ")";
             case TokenType::COMMA: return ",";
             case TokenType::SEMICOLON: return ";";
+            case TokenType::DOT: return ".";
             case TokenType::WHITESPACE: return "WHITESPACE";
             case TokenType::END_OF_FILE: return "EOF";
             case TokenType::UNKNOWN: return "UNKNOWN";

@@ -57,6 +57,10 @@ private:
     ExpressionPtr parseLiteral();
     ExpressionPtr parseColumn();
     
+    // JOIN解析
+    std::vector<std::unique_ptr<JoinClause>> parseJoins();
+    std::unique_ptr<JoinClause> parseJoin();
+    
     // 条件解析
     std::unique_ptr<tinydb::Condition> parseCondition();
     std::unique_ptr<tinydb::Condition> parseComparisonCondition();
