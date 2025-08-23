@@ -63,6 +63,18 @@ void Lexer::scanToken(bool includeWhitespace) {
             addToken(TokenType::DOT);
             break;
             
+        // SQL注释处理
+        case '-':
+            if (match('-')) {
+                // SQL注释 "--"，跳过到行尾
+                while (peek() != '\n' && !isAtEnd()) {
+                    advance();
+                }
+            } else {
+                error("Unexpected character '-' (did you mean '--' for comment?)");
+            }
+            break;
+            
         // 可能的双字符操作符
         case '=':
             addToken(TokenType::EQUAL);

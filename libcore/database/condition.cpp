@@ -19,7 +19,14 @@ Value ConditionValue::evaluate(const Row& row, const Table& table) const {
             bool found = false;
             
             for (size_t i = 0; i < schema.size(); ++i) {
-                if (schema[i].name == columnName) {
+                // 处理限定列名：如果columnName包含"."，只比较列名部分
+                std::string actualColumnName = columnName;
+                size_t dotPos = columnName.find('.');
+                if (dotPos != std::string::npos) {
+                    actualColumnName = columnName.substr(dotPos + 1);
+                }
+                
+                if (schema[i].name == actualColumnName) {
                     columnIndex = i;
                     found = true;
                     break;

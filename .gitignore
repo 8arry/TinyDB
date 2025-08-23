@@ -1,264 +1,53 @@
-# TinyDB .gitignore
-
-# ==============================================================================
-# Build artifacts and compiled binaries
-# ==============================================================================
-
 # Build directories
 build/
 bin/
-obj/
-out/
+lib/
 
-# Compiled executables
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Makefile
+*.ninja
+build.ninja
+
+# Executables
 *.exe
 *.out
 *.app
-*.dll
+
+# Libraries
+*.lib
+*.a
 *.so
 *.dylib
-*.a
-*.lib
+*.dll
 
 # Object files
 *.o
 *.obj
-*.lo
-*.slo
 
-# ==============================================================================
-# CMake generated files
-# ==============================================================================
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.json.backup
 
-# CMake build directories
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-*.cmake
-!CMakeLists.txt
-
-# CMake user files
-CMakeUserPresets.json
-
-# ==============================================================================
-# Compiler and IDE specific files
-# ==============================================================================
-
-# GCC/Clang
-*.gch
-*.pch
-
-# Visual Studio
+# IDE files
+.vscode/
 .vs/
 *.vcxproj*
 *.sln
 *.user
-*.aps
-*.pch
-*.vspscc
-*_i.c
-*_p.c
-*.ncb
-*.suo
-*.tlb
-*.tlh
-*.bak
-*.cache
-*.ilk
-*.log
-*.sbr
-*.scc
-[Bb]in
-[Dd]ebug*/
-[Rr]elease*/
-_ReSharper*/
-[Tt]est[Rr]esult*
-[Bb]uild[Ll]og.*
-*.VisualState.xml
-Version.cs
-Version.h
-Version.cpp
 
-# Visual Studio Code
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# JetBrains IDEs (CLion, etc.)
-.idea/
-*.iws
-*.iml
-*.ipr
-cmake-build-*/
-
-# Code::Blocks
-*.layout
-*.depend
-
-# Qt Creator
-*.autosave
-
-# ==============================================================================
-# System specific files
-# ==============================================================================
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.lnk
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# Linux
-*~
-.fuse_hidden*
-.directory
-.Trash-*
-.nfs*
-
-# ==============================================================================
-# Development and testing files
-# ==============================================================================
-
-# Test outputs and temporary files
-test_output.txt
-*.tmp
-*.temp
-*.log
-*.out
-
-# Debug and profiling files
-*.dSYM/
-*.dSYM.zip
-callgrind.out.*
-massif.out.*
-*.gcda
-*.gcno
-*.gcov
-
-# Valgrind output
-vgcore.*
-
-# AddressSanitizer output
-*.asan
-
-# ==============================================================================
-# Documentation build artifacts
-# ==============================================================================
-
-# Doxygen output
-doxygen/
-docs/html/
-docs/latex/
-
-# Sphinx
-docs/_build/
-
-# ==============================================================================
-# Package manager files
-# ==============================================================================
-
-# Conan
-conaninfo.txt
-conanbuildinfo.*
-conan.lock
-
-# vcpkg
-vcpkg_installed/
-
-# ==============================================================================
-# Backup and temporary files
-# ==============================================================================
-
-# Backup files
-*.bak
-*.backup
-*.swp
-*.swo
-*~
-
-# Vim
-[._]*.s[a-v][a-z]
-[._]*.sw[a-p]
-[._]s[a-rt-v][a-z]
-[._]ss[a-gi-z]
-[._]sw[a-p]
-
-# Emacs
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# ==============================================================================
-# Project specific
-# ==============================================================================
-
-# Test databases (if we add persistence later)
-*.db
-*.sqlite
-*.sqlite3
-
-# Generated SQL test files (except examples)
+# Test output files
+*.json
 test_*.sql
-!examples/*.sql
+Testing/
 
-# Performance test outputs
-benchmark_results.txt
-perf_*.txt
-
-# ==============================================================================
-# Environment and configuration
-# ==============================================================================
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Local configuration files
-local.config
-*.local
-
-# User-specific build settings
-user_config.cmake
-
-# ==============================================================================
-# Third-party libraries
-# ==============================================================================
-
-# Downloaded dependencies
-third_party/
-external/
-libs/
-!libcore/
-
-# ==============================================================================
-# Archive files
-# ==============================================================================
-
-*.zip
-*.tar.gz
-*.tgz
-*.rar
-*.7z
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini

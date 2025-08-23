@@ -88,6 +88,8 @@ public:
                 return; // 跳过空行
             }
             
+
+            
             // 词法分析
             sql::Lexer lexer(sql);
             auto tokens = lexer.tokenize();
@@ -96,8 +98,10 @@ public:
             sql::Parser parser(std::move(tokens));
             auto statement = parser.parse();
             
-            // 执行语句
-            executeStatement(statement.get());
+            // 执行语句（如果存在）
+            if (statement) {
+                executeStatement(statement.get());
+            }
             
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << std::endl;
@@ -165,28 +169,38 @@ private:
             condition = tinydb::ConditionAdapter::toLambda(*stmt->getWhereCondition());
         }
         
-        std::vector<std::string> selectColumns = {"*"}; // 默认选择所有列
+        // 确定要选择的列
+        std::vector<std::string> selectColumns;
+        std::vector<std::string> displayColumnNames;
+        
+        if (stmt->isSelectAll()) {
+            // SELECT *
+            selectColumns = {"*"};
+            auto& table = db_.getTable(stmt->getTableName());
+            auto schema = table.getSchema();
+            for (const auto& col : schema) {
+                displayColumnNames.push_back(col.name);
+            }
+        } else {
+            // SELECT col1, col2 - 需要处理限定列名
+            selectColumns = stmt->getColumns();
+            displayColumnNames = stmt->getColumns();
+            
+            // 处理限定列名：将 "table.column" 转换为 "column"
+            for (auto& colName : selectColumns) {
+                size_t dotPos = colName.find('.');
+                if (dotPos != std::string::npos) {
+                    colName = colName.substr(dotPos + 1); // 只保留列名部分
+                }
+            }
+        }
+        
         auto rows = condition ? 
             db_.selectFrom(stmt->getTableName(), selectColumns, condition) :
             db_.selectFrom(stmt->getTableName(), selectColumns);
         
-        // 获取表结构以确定列名
-        auto& table = db_.getTable(stmt->getTableName());
-        auto schema = table.getSchema();
-        
-        std::vector<std::string> columnNames;
-        if (stmt->isSelectAll()) {
-            // SELECT *
-            for (const auto& col : schema) {
-                columnNames.push_back(col.name);
-            }
-        } else {
-            // SELECT col1, col2
-            columnNames = stmt->getColumns();
-        }
-        
         // 打印ASCII表格
-        TableFormatter::printTable(columnNames, rows);
+        TableFormatter::printTable(displayColumnNames, rows);
     }
     
     void executeSelectWithJoin(sql::SelectStatement* stmt) {
@@ -208,7 +222,19 @@ private:
             auto filteredRows = std::vector<tinydb::Row>();
             for (const auto& row : resultRows) {
                 // 为JOIN结果创建一个临时表来评估条件
-                tinydb::Table tempTable("temp", {});
+                // 合并所有相关表的schema
+                auto allColumnNames = buildJoinColumnNames(stmt);
+                std::vector<tinydb::Column> combinedSchema;
+                
+                // 构建组合schema（简化：都设为int类型，因为这里只是为了列名查找）
+                for (const auto& colName : allColumnNames) {
+                    size_t dotPos = colName.find('.');
+                    std::string actualColName = (dotPos != std::string::npos) ? 
+                        colName.substr(dotPos + 1) : colName;
+                    combinedSchema.push_back({actualColName, tinydb::DataType::INT});
+                }
+                
+                tinydb::Table tempTable("temp", combinedSchema);
                 if (condition(row, tempTable)) {
                     filteredRows.push_back(row);
                 }
@@ -219,6 +245,8 @@ private:
         // 构建列名和选择列
         std::vector<std::string> allColumnNames = buildJoinColumnNames(stmt);
         std::vector<std::string> selectedColumns;
+        
+
         
         if (stmt->isSelectAll()) {
             selectedColumns = allColumnNames;
@@ -264,12 +292,26 @@ private:
         
         // 使用ConditionAdapter评估条件
         auto lambda = tinydb::ConditionAdapter::toLambda(condition);
-        tinydb::Table tempTable("temp", {});
+        // 合并两个表的schema来创建临时表schema
+        auto leftSchema = leftTable.getSchema();
+        auto rightSchema = rightTable.getSchema();
+        std::vector<tinydb::Column> combinedSchema;
+        
+        // 添加左表列
+        for (const auto& col : leftSchema) {
+            combinedSchema.push_back(col);
+        }
+        // 添加右表列
+        for (const auto& col : rightSchema) {
+            combinedSchema.push_back(col);
+        }
+        
+        tinydb::Table tempTable("temp", combinedSchema);
         return lambda(combinedRow, tempTable);
     }
     
-    tinydb::Row combineRows(const tinydb::Table& leftTable, const tinydb::Row& leftRow,
-                           const tinydb::Table& rightTable, const tinydb::Row& rightRow) {
+    tinydb::Row combineRows(const tinydb::Table& /* leftTable */, const tinydb::Row& leftRow,
+                           const tinydb::Table& /* rightTable */, const tinydb::Row& rightRow) {
         std::vector<tinydb::Value> combinedValues;
         
         // 添加左表的所有列
@@ -314,6 +356,11 @@ private:
             return rows;
         }
         
+        // 如果没有找到任何匹配的列，返回空结果
+        if (allColumnNames.empty()) {
+            return {};
+        }
+        
         // 找到选中列的索引
         std::vector<size_t> selectedIndices;
         for (const auto& selectedCol : selectedColumns) {
@@ -321,6 +368,11 @@ private:
             if (it != allColumnNames.end()) {
                 selectedIndices.push_back(std::distance(allColumnNames.begin(), it));
             }
+        }
+        
+        // 如果没有找到任何匹配的列，返回空行而不是空结果
+        if (selectedIndices.empty()) {
+            return {};
         }
         
         // 提取选中的列
@@ -335,7 +387,10 @@ private:
                 }
             }
             
-            result.emplace_back(selectedValues);
+            // 只有当有有效值时才添加行
+            if (!selectedValues.empty()) {
+                result.emplace_back(selectedValues);
+            }
         }
         
         return result;
@@ -438,10 +493,11 @@ bool handleSpecialCommand(const std::string& command, SQLExecutor& executor) {
             std::cout << "\nWHERE Conditions:" << std::endl;
             std::cout << "  Comparison: =, !=, <, >, <=, >=" << std::endl;
             std::cout << "  Logical: AND, OR" << std::endl;
+            std::cout << "  Grouping: ( ) parentheses for precedence" << std::endl;
             std::cout << "  Examples:" << std::endl;
             std::cout << "    WHERE age > 18 AND department = \"IT\"" << std::endl;
-            std::cout << "    WHERE salary > 5000 OR age < 25" << std::endl;
-            std::cout << "    WHERE id = 1 AND age > 30 OR salary > 6000" << std::endl;
+            std::cout << "    WHERE (price > 100 AND category = \"Electronics\") OR stock > 150" << std::endl;
+            std::cout << "    WHERE price > 50 AND (category = \"Books\" OR category = \"IT\")" << std::endl;
             std::cout << "\nPersistence Commands:" << std::endl;
             std::cout << "  EXPORT DATABASE TO \"filename.json\";" << std::endl;
             std::cout << "  IMPORT DATABASE FROM \"filename.json\";" << std::endl;

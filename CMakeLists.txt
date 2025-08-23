@@ -42,30 +42,7 @@ target_include_directories(tinydb_core PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# 测试可执行文件
-add_executable(test_simple tests/test_simple.cpp)
-target_link_libraries(test_simple tinydb_core)
-
-add_executable(test_value tests/test_value.cpp)
-target_link_libraries(test_value tinydb_core)
-
-add_executable(test_table tests/test_table.cpp)
-target_link_libraries(test_table tinydb_core)
-
-add_executable(test_database tests/test_database.cpp)
-target_link_libraries(test_database tinydb_core)
-
-add_executable(test_condition tests/test_condition.cpp)
-target_link_libraries(test_condition tinydb_core)
-
-add_executable(test_lexer tests/test_lexer.cpp)
-target_link_libraries(test_lexer tinydb_core)
-
-add_executable(test_parser tests/test_parser.cpp)
-target_link_libraries(test_parser tinydb_core)
-
-add_executable(test_join tests/test_join.cpp)
-target_link_libraries(test_join tinydb_core)
+# 单元测试 - 使用Catch2框架
 
 # Catch2测试
 add_executable(catch2_tests tests/catch2_tests.cpp)
@@ -77,10 +54,7 @@ set_target_properties(catch2_tests PROPERTIES
 # 添加CTest支持
 add_test(NAME TinyDB_Tests COMMAND catch2_tests)
 
-# 设置可执行文件输出目录
-set_target_properties(test_simple test_value test_table test_database test_condition test_lexer test_parser test_join PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
-)
+
 
 # 主程序
 add_executable(tinydb main.cpp)

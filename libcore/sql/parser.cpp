@@ -92,6 +92,11 @@ std::vector<std::unique_ptr<Statement>> Parser::parseMultiple() {
 }
 
 std::unique_ptr<Statement> Parser::parseStatement() {
+    // 如果到达文件末尾，返回nullptr表示没有语句
+    if (check(TokenType::END_OF_FILE)) {
+        return nullptr;
+    }
+    
     if (match(TokenType::CREATE)) {
         return parseCreateTable();
     }
@@ -307,10 +312,10 @@ std::unique_ptr<tinydb::Condition> Parser::parseLogicalOr() {
 
 // 解析AND条件（中等优先级）
 std::unique_ptr<tinydb::Condition> Parser::parseLogicalAnd() {
-    auto left = parseComparisonCondition();
+    auto left = parsePrimaryCondition();
     
     while (match(TokenType::AND)) {
-        auto right = parseComparisonCondition();
+        auto right = parsePrimaryCondition();
         left = std::make_unique<tinydb::LogicalCondition>(
             std::move(left), 
             tinydb::LogicalOp::AND, 
@@ -319,6 +324,19 @@ std::unique_ptr<tinydb::Condition> Parser::parseLogicalAnd() {
     }
     
     return left;
+}
+
+// 解析基础条件（最高优先级） - 处理括号和比较条件
+std::unique_ptr<tinydb::Condition> Parser::parsePrimaryCondition() {
+    // 如果遇到左括号，递归解析括号内的条件
+    if (match(TokenType::LEFT_PAREN)) {
+        auto condition = parseCondition();
+        consume(TokenType::RIGHT_PAREN, "Expected ')' after condition");
+        return condition;
+    }
+    
+    // 否则解析比较条件
+    return parseComparisonCondition();
 }
 
 std::unique_ptr<tinydb::Condition> Parser::parseComparisonCondition() {

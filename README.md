@@ -1,41 +1,50 @@
 # TinyDB
 
-A simplified in-memory SQL database implementation using modern C++23 features.
+A complete in-memory SQL database implementation using modern C++23 features.
 
 ## 🎯 Project Overview
 
-TinyDB is an educational database project that implements core SQL functionality including:
-- Table creation and management
-- Data insertion, updating, and deletion
-- SQL query execution with WHERE conditions
-- Type-safe value system using C++23 features
+TinyDB is a fully functional in-memory database that implements comprehensive SQL functionality including:
+- ✅ **Core SQL Operations**: CREATE TABLE, INSERT, SELECT, UPDATE, DELETE
+- ✅ **Advanced WHERE Conditions**: All comparison operators (=, !=, <, >, <=, >=)
+- ✅ **Logical Operations**: AND, OR with parentheses and correct precedence
+- ✅ **JOIN Operations**: INNER JOIN with qualified column names
+- ✅ **Data Persistence**: Export/import database to JSON format
+- ✅ **Type Safety**: Robust value system using modern C++23 features
+- ✅ **Comprehensive Testing**: 48 unit tests covering all functionality
 
 ## 📁 Project Structure
 
 ```
 TinyDB/
-├── libcore/                    # Core library source code
-│   ├── database/              # Database core components
-│   │   ├── value.hpp/cpp      # Type-safe value system
-│   │   ├── table.hpp/cpp      # Table data structure
-│   │   └── database.hpp/cpp   # Database container
-│   ├── parser/                # SQL parsing components
-│   ├── executor/              # SQL statement executors
-│   ├── output/                # Result formatting
-│   └── exception/             # Exception handling
-├── tests/                     # Test files
-│   ├── test_simple.cpp        # Basic functionality tests
-│   └── test_value.cpp         # Value system tests
-├── docs/                      # Documentation
-│   ├── project_design.md      # Detailed design document
-│   └── database.md            # Project requirements
-├── examples/                  # Example SQL queries
-│   └── sample_queries.sql     # Sample SQL statements
-├── scripts/                   # Build and utility scripts
-│   ├── build.ps1              # Windows build script
-│   └── test.ps1               # Test runner script
-├── build/                     # Compiled binaries
-└── CMakeLists.txt             # CMake build configuration
+├── libcore/                   # Core library source code
+│   ├── database/             # Database core components
+│   │   ├── value.hpp/cpp     # Type-safe value system with C++23 features
+│   │   ├── table.hpp/cpp     # Table data structure and operations
+│   │   ├── database.hpp/cpp  # Database container and management
+│   │   ├── condition.hpp/cpp # WHERE condition evaluation system
+│   │   └── persistence.hpp/cpp # Database export/import functionality
+│   └── sql/                  # SQL parsing and AST components
+│       ├── token.hpp/cpp     # Lexical tokens and utilities
+│       ├── lexer.hpp/cpp     # SQL lexical analysis
+│       ├── parser.hpp/cpp    # Recursive descent SQL parser
+│       └── ast.hpp/cpp       # Abstract Syntax Tree definitions
+├── tests/                    # Comprehensive test suite
+│   ├── catch.hpp            # Catch2-compatible test framework
+│   └── catch2_tests.cpp     # Complete test coverage (48 tests)
+├── examples/                 # Example SQL queries and demos
+│   ├── demo_complete.sql    # Complete feature demonstration
+│   └── sample_queries.sql   # Basic SQL examples
+├── docs/                    # Project documentation
+│   ├── database.md          # Official project requirements
+│   └── project_design.md    # Design documentation
+├── scripts/                 # Build automation scripts
+│   ├── build_clean.ps1      # Clean rebuild script
+│   ├── build.ps1           # Standard build script
+│   └── test.ps1            # Test runner script
+├── main.cpp                 # Interactive SQL console application
+├── CMakeLists.txt          # CMake build configuration
+└── .gitignore              # Git ignore patterns
 ```
 
 ## 🛠️ Requirements
@@ -46,37 +55,55 @@ TinyDB/
 
 ## 🚀 Quick Start
 
-### Windows (PowerShell)
+### Option 1: Clean Build (Recommended)
+
+```powershell
+# Complete clean rebuild and test
+.\scripts\build_clean.ps1
+```
+
+### Option 2: Standard Build
 
 ```powershell
 # Build the project
 .\scripts\build.ps1
 
-# Run tests
+# Run all tests
 .\scripts\test.ps1
 
-# Run a specific test
-.\build\test_simple.exe
+# Run interactive database
+.\build\build\tinydb.exe
 ```
 
-### Manual Build
+### Option 3: Manual Build
 
 ```bash
-# Set your GCC path (adjust as needed)
-export PATH="/path/to/gcc15/bin:$PATH"
+# Create build directory
+mkdir build && cd build
 
-# Compile
-g++ -std=c++23 -Wall -Wextra -I. libcore/database/value.cpp tests/test_simple.cpp -o test_simple
+# Configure and build
+cmake -G "Ninja" ..
+cmake --build .
 
-# Run
-./test_simple
+# Run tests
+ctest --output-on-failure
+
+# Run interactive database
+.\build\tinydb.exe
 ```
 
 ## 🧪 Testing
 
-The project includes comprehensive tests:
-- **Value System Tests**: Type safety, conversions, comparisons
-- **Integration Tests**: End-to-end SQL execution (coming soon)
+The project includes 48 comprehensive unit tests covering:
+- ✅ **SQL Parser Tests**: Valid/invalid syntax, error handling
+- ✅ **SQL Execution Tests**: All statement types, edge cases  
+- ✅ **JOIN Operation Tests**: Complex queries, qualified columns
+- ✅ **WHERE Condition Tests**: All operators, logical combinations, parentheses
+- ✅ **Persistence Tests**: Export/import, error handling, large datasets
+- ✅ **Value System Tests**: Type safety, conversions, comparisons
+- ✅ **Edge Case Tests**: Empty values, special characters, error conditions
+
+Run tests with: `.\scripts\build_clean.ps1` or `ctest --output-on-failure`
 
 ## 🎓 C++23 Features Used
 
@@ -89,31 +116,67 @@ The project includes comprehensive tests:
 
 ## 📖 SQL Syntax Supported
 
+### Core SQL Operations
 ```sql
 -- Table creation
 CREATE TABLE users (id int, name str, age int);
 
--- Data insertion
-INSERT INTO users (id, name, age) VALUES (1, "Alice", 25), (2, "Bob", 30);
+-- Data insertion  
+INSERT INTO users VALUES (1, "Alice", 25), (2, "Bob", 30);
 
--- Queries
+-- Basic queries
 SELECT * FROM users;
 SELECT name, age FROM users WHERE age > 25;
 
--- Updates
-UPDATE users SET age = 31 WHERE name = "Bob";
+-- Advanced WHERE conditions
+SELECT * FROM users WHERE age >= 25 AND name != "Alice";
+SELECT * FROM users WHERE (age > 30 OR name = "Bob") AND age < 50;
 
--- Deletion
+-- JOIN operations
+SELECT users.name, orders.amount 
+FROM users INNER JOIN orders ON users.id = orders.user_id;
+
+-- Updates and deletions
+UPDATE users SET age = 31 WHERE name = "Bob";
 DELETE FROM users WHERE id = 1;
 ```
 
-## 🔧 Development Status
+### Interactive Commands
+```sql
+-- Database persistence
+EXPORT DATABASE TO "my_database.json";
+IMPORT DATABASE FROM "my_database.json";
 
-- ✅ **Value Type System** - Complete
-- 🚧 **Table Structure** - In Progress
-- ⏳ **Database Management** - Planned
-- ⏳ **SQL Parser** - Planned
-- ⏳ **Query Executor** - Planned
+-- Help and utilities
+HELP;          -- Show available commands
+QUIT;          -- Exit the program
+```
+
+### Supported Features
+- ✅ **Data Types**: `int`, `str`
+- ✅ **Operators**: `=`, `!=`, `<`, `>`, `<=`, `>=`, `AND`, `OR`
+- ✅ **Grouping**: Parentheses with correct precedence
+- ✅ **Qualified Names**: `table.column` syntax
+- ✅ **String Literals**: Double-quoted strings with special characters
+
+## 🏆 Project Status
+
+**Complete Implementation** - All core and extension features implemented:
+
+- ✅ **Value Type System** - Complete with C++23 features
+- ✅ **Table & Database Management** - Complete with full CRUD operations
+- ✅ **SQL Lexer & Parser** - Complete recursive descent parser
+- ✅ **Query Executor** - Complete with JOIN support
+- ✅ **WHERE Conditions** - Complete with all operators and precedence
+- ✅ **Data Persistence** - Complete JSON export/import
+- ✅ **Unit Testing** - Complete with 48 comprehensive tests
+- ✅ **Error Handling** - Complete with meaningful error messages
+- ✅ **Interactive Console** - Complete with help system
+
+**Extensions Implemented:**
+- ✅ **Extension 1**: INNER JOIN with qualified column names
+- ✅ **Extension 2**: Comprehensive unit testing with Catch2
+- ✅ **Extension 3**: Database persistence with JSON format
 
 ## 📝 License
 
