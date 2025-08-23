@@ -52,7 +52,7 @@ void testComparisonCondition() {
         Database db;
         db.createTable("users",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
+            Column{"name", DataType::STR},
             Column{"age", DataType::INT}
         );
         
@@ -105,7 +105,7 @@ void testLogicalCondition() {
         Database db;
         db.createTable("employees",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
+            Column{"name", DataType::STR},
             Column{"age", DataType::INT},
             Column{"salary", DataType::INT}
         );
@@ -184,7 +184,7 @@ void testOperatorOverloads() {
         Database db;
         db.createTable("products",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
+            Column{"name", DataType::STR},
             Column{"price", DataType::INT}
         );
         
@@ -234,7 +234,7 @@ void testConditionAdapter() {
         Database db;
         db.createTable("students",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
+            Column{"name", DataType::STR},
             Column{"grade", DataType::INT}
         );
         
@@ -267,7 +267,7 @@ void testErrorHandling() {
         Database db;
         db.createTable("test",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING}
+            Column{"name", DataType::STR}
         );
         
         db.insertInto("test", {Value{1}, Value{"Alice"}});
@@ -319,8 +319,8 @@ int main() {
         
         demo.createTable("employees",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
-            Column{"department", DataType::STRING},
+            Column{"name", DataType::STR},
+            Column{"department", DataType::STR},
             Column{"salary", DataType::INT},
             Column{"experience", DataType::INT}
         );

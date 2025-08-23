@@ -25,9 +25,9 @@ enum class TokenType {
     OR,
     NOT,
     
-    // 数据类型关键字
-    INT,
-    STRING,
+    // 数据类型关键字 (符合项目要求)
+    INT,        // int
+    STR,        // str
     
     // 标识符和字面量
     IDENTIFIER,     // 表名、列名等
@@ -147,7 +147,7 @@ public:
         if (upperWord == "OR") return TokenType::OR;
         if (upperWord == "NOT") return TokenType::NOT;
         if (upperWord == "INT") return TokenType::INT;
-        if (upperWord == "STRING") return TokenType::STRING;
+        if (upperWord == "STR") return TokenType::STR;
         
         return TokenType::IDENTIFIER; // 不是关键字则为标识符
     }
@@ -170,7 +170,7 @@ public:
             case TokenType::OR: return "OR";
             case TokenType::NOT: return "NOT";
             case TokenType::INT: return "INT";
-            case TokenType::STRING: return "STRING";
+            case TokenType::STR: return "STR";
             case TokenType::IDENTIFIER: return "IDENTIFIER";
             case TokenType::INTEGER: return "INTEGER";
             case TokenType::STRING_LITERAL: return "STRING_LITERAL";

@@ -43,7 +43,7 @@ void testTableCreation() {
         std::cout << "  Creating schema...\n";
         std::vector<Column> schema = {
             {"id", DataType::INT},
-            {"name", DataType::STRING},
+            {"name", DataType::STR},
             {"age", DataType::INT}
         };
         
@@ -84,7 +84,7 @@ void testDataInsertion() {
     
     std::vector<Column> schema = {
         {"id", DataType::INT},
-        {"name", DataType::STRING},
+        {"name", DataType::STR},
         {"age", DataType::INT}
     };
     
@@ -121,7 +121,7 @@ void testDataSelection() {
     
     std::vector<Column> schema = {
         {"id", DataType::INT},
-        {"name", DataType::STRING},
+        {"name", DataType::STR},
         {"age", DataType::INT}
     };
     
@@ -169,7 +169,7 @@ void testDataUpdate() {
     
     std::vector<Column> schema = {
         {"id", DataType::INT},
-        {"name", DataType::STRING},
+        {"name", DataType::STR},
         {"age", DataType::INT}
     };
     
@@ -216,7 +216,7 @@ void testDataDeletion() {
     
     std::vector<Column> schema = {
         {"id", DataType::INT},
-        {"name", DataType::STRING},
+        {"name", DataType::STR},
         {"age", DataType::INT}
     };
     
@@ -258,7 +258,7 @@ void testErrorHandling() {
     
     std::vector<Column> schema = {
         {"id", DataType::INT},
-        {"name", DataType::STRING}
+        {"name", DataType::STR}
     };
     
     Table table("users", std::move(schema));
@@ -306,7 +306,7 @@ void testC23Features() {
     
     std::vector<Column> schema = {
         {"id", DataType::INT},
-        {"name", DataType::STRING},
+        {"name", DataType::STR},
         {"score", DataType::INT}
     };
     
@@ -360,7 +360,7 @@ int main() {
         std::cout << "\n📋 Demo: Table output formatting\n";
         std::vector<Column> demoSchema = {
             {"id", DataType::INT},
-            {"name", DataType::STRING},
+            {"name", DataType::STR},
             {"age", DataType::INT}
         };
         

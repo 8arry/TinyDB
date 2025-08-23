@@ -58,14 +58,20 @@ target_link_libraries(test_condition tinydb_core)
 add_executable(test_lexer tests/test_lexer.cpp)
 target_link_libraries(test_lexer tinydb_core)
 
+add_executable(test_parser tests/test_parser.cpp)
+target_link_libraries(test_parser tinydb_core)
+
 # 设置可执行文件输出目录
-set_target_properties(test_simple test_value test_table test_database test_condition test_lexer PROPERTIES
+set_target_properties(test_simple test_value test_table test_database test_condition test_lexer test_parser PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
 )
 
-# 主程序（稍后创建）
-# add_executable(tinydb main.cpp)
-# target_link_libraries(tinydb tinydb_core)
+# 主程序
+add_executable(tinydb main.cpp)
+target_link_libraries(tinydb tinydb_core)
+set_target_properties(tinydb PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
+)
 
 # 安装规则
 install(TARGETS tinydb_core

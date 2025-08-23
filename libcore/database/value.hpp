@@ -27,10 +27,10 @@
 
 namespace tinydb {
 
-// 支持的数据类型枚举 (使用C++23 scoped enum)
+// 支持的数据类型枚举 (符合项目要求：int 和 str)
 enum class DataType : std::uint8_t {
-    INT,
-    STRING
+    INT,    // int - 整数类型
+    STR     // str - 字符串类型
 };
 
 // C++23 concept for value types
@@ -64,7 +64,7 @@ public:
             if constexpr (std::same_as<T, int>) {
                 return DataType::INT;
             } else if constexpr (std::same_as<T, std::string>) {
-                return DataType::STRING;
+                return DataType::STR;
             }
         }, data);
     }
@@ -115,7 +115,7 @@ public:
             switch (type) {
                 case DataType::INT:
                     return Value{0};
-                case DataType::STRING:
+                case DataType::STR:
                     return Value{std::string{}};
             }
             __builtin_unreachable(); // GCC builtin, C++23 fallback

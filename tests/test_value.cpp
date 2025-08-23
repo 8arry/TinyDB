@@ -15,10 +15,10 @@ int main() {
     
     // 使用constexpr函数获取默认值
     constexpr auto defaultIntVal = Value::getDefault(DataType::INT);
-    constexpr auto defaultStrVal = Value::getDefault(DataType::STRING);
+    constexpr auto defaultStrVal = Value::getDefault(DataType::STR);
     
     assert(intVal.getType() == DataType::INT);
-    assert(strVal.getType() == DataType::STRING);
+    assert(strVal.getType() == DataType::STR);
     
     // 测试C++23的std::expected版本
     {
@@ -71,12 +71,12 @@ int main() {
     
     // 测试Column结构（使用C++23的designated initializers概念）
     Column idCol{"id", DataType::INT};
-    Column nameCol{"name", DataType::STRING};
+    Column nameCol{"name", DataType::STR};
     
     assert(idCol.name == "id");
     assert(idCol.type == DataType::INT);
     assert(nameCol.name == "name");
-    assert(nameCol.type == DataType::STRING);
+    assert(nameCol.type == DataType::STR);
     
     // 测试Column的spaceship operator
     Column idCol2{"id", DataType::INT};

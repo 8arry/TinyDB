@@ -35,7 +35,7 @@ void testTableManagement() {
         // 测试表创建
         std::vector<Column> userSchema = {
             {"id", DataType::INT},
-            {"name", DataType::STRING},
+            {"name", DataType::STR},
             {"age", DataType::INT}
         };
         
@@ -47,7 +47,7 @@ void testTableManagement() {
         // 测试模板创建方法
         db.createTable("products", 
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
+            Column{"name", DataType::STR},
             Column{"price", DataType::INT}
         );
         assert(db.getTableCount() == 2);
@@ -90,7 +90,7 @@ void testDataOperations() {
         // 创建测试表
         db.createTable("users",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
+            Column{"name", DataType::STR},
             Column{"age", DataType::INT}
         );
         
@@ -172,12 +172,12 @@ void testDatabaseStatistics() {
         // 创建多个表
         db.createTable("users",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING}
+            Column{"name", DataType::STR}
         );
         
         db.createTable("products",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
+            Column{"name", DataType::STR},
             Column{"price", DataType::INT}
         );
         
@@ -275,7 +275,7 @@ void testDatabaseValidation() {
         // 创建正常的表
         db.createTable("users",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING}
+            Column{"name", DataType::STR}
         );
         
         db.insertInto("users", {Value{1}, Value{"Alice"}});
@@ -300,7 +300,7 @@ void testTransaction() {
         
         db.createTable("users",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING}
+            Column{"name", DataType::STR}
         );
         
         // 测试事务基础功能
@@ -357,7 +357,7 @@ void testSnapshot() {
         // 创建数据
         db.createTable("users",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING}
+            Column{"name", DataType::STR}
         );
         
         db.insertInto("users", {Value{1}, Value{"Alice"}});
@@ -403,8 +403,8 @@ int main() {
         // 创建示例数据
         demo.createTable("employees",
             Column{"id", DataType::INT},
-            Column{"name", DataType::STRING},
-            Column{"department", DataType::STRING},
+            Column{"name", DataType::STR},
+            Column{"department", DataType::STR},
             Column{"salary", DataType::INT}
         );
         
