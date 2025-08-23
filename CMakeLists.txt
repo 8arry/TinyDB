@@ -43,16 +43,29 @@ target_include_directories(tinydb_core PUBLIC
 )
 
 # 单元测试 - 使用Catch2框架
+find_package(Catch2 QUIET)
 
-# Catch2测试
-add_executable(catch2_tests tests/catch2_tests.cpp)
-target_link_libraries(catch2_tests tinydb_core)
-set_target_properties(catch2_tests PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
-)
-
-# 添加CTest支持
-add_test(NAME TinyDB_Tests COMMAND catch2_tests)
+if(Catch2_FOUND)
+    # 使用系统提供的Catch2
+    add_executable(catch2_tests tests/catch2_tests.cpp)
+    target_link_libraries(catch2_tests tinydb_core Catch2::Catch2)
+    set_target_properties(catch2_tests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
+    )
+    
+    # 添加CTest支持
+    add_test(NAME TinyDB_Tests COMMAND catch2_tests)
+else()
+    # 使用本地Catch2头文件
+    add_executable(catch2_tests tests/catch2_tests.cpp)
+    target_link_libraries(catch2_tests tinydb_core)
+    set_target_properties(catch2_tests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build"
+    )
+    
+    # 添加CTest支持
+    add_test(NAME TinyDB_Tests COMMAND catch2_tests)
+endif()
 
 
 
