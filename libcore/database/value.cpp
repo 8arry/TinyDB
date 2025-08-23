@@ -3,7 +3,7 @@
 namespace tinydb {
 
 std::ostream& operator<<(std::ostream& os, const Value& value) {
-    // 使用modern C++的std::visit和constexpr lambda
+    // Using modern C++ std::visit and constexpr lambda
     std::visit([&os](const auto& val) {
         using T = std::decay_t<decltype(val)>;
         if constexpr (std::same_as<T, int>) {

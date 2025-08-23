@@ -9,7 +9,7 @@
 #include <functional>
 #include <compare>
 
-// 条件性包含C++23特性
+// Conditional inclusion of C++23 features
 #if __cplusplus >= 202302L && __has_include(<format>)
 #include <format>
 #define HAS_FORMAT 1
@@ -27,10 +27,10 @@
 
 namespace tinydb {
 
-// 支持的数据类型枚举 (符合项目要求：int 和 str)
+// Supported data types (meets project requirements: int and str)
 enum class DataType : std::uint8_t {
-    INT,    // int - 整数类型
-    STR     // str - 字符串类型
+    INT,    // int - integer type
+    STR     // str - string type
 };
 
 // C++23 concept for value types
@@ -42,13 +42,13 @@ concept ValueType = std::same_as<std::remove_cvref_t<T>, int> ||
                    (std::is_array_v<std::remove_reference_t<T>> && 
                     std::same_as<std::remove_extent_t<std::remove_reference_t<T>>, char>);
 
-// 类型安全的值类，使用C++23特性
+// Type-safe value class using C++23 features
 class Value {
 private:
     std::variant<int, std::string> data;
 
 public:
-    // 使用C++23的deducing this特性和concepts
+    // Using C++23 deducing this feature and concepts
     Value() : data(0) {}
     
     template<ValueType T>
@@ -57,7 +57,7 @@ public:
     // C++23 string literal constructor
     Value(const char* value) : data(std::string(value)) {}
 
-    // 获取类型 (使用C++23的if constexpr和visitor pattern)
+    // Get type (using C++23 if constexpr and visitor pattern)
     DataType getType() const noexcept {
         return std::visit([](const auto& value) constexpr -> DataType {
             using T = std::decay_t<decltype(value)>;
@@ -70,7 +70,7 @@ public:
     }
 
 #if HAS_EXPECTED
-    // 使用C++23的std::expected进行错误处理
+    // Using C++23 std::expected for error handling
     std::expected<int, std::string> asInt() const noexcept {
         if (auto* val = std::get_if<int>(&data)) {
             return *val;
@@ -86,7 +86,7 @@ public:
     }
 #endif
 
-    // 传统的抛出异常版本 (向后兼容)
+    // Traditional exception throwing version (backward compatibility)
     int asIntUnsafe() const {
 #if HAS_EXPECTED
         auto result = asInt();
@@ -109,7 +109,7 @@ public:
         throw std::runtime_error("Value is not a string");
     }
 
-    // 使用C++23的constexpr和pattern matching风格
+    // Using C++23 constexpr and pattern matching style
     static constexpr Value getDefault(DataType type) {
         return [type]() constexpr -> Value {
             switch (type) {
@@ -122,7 +122,7 @@ public:
         }();
     }
 
-    // 使用C++23的defaulted comparison和spaceship operator
+    // Using C++23 defaulted comparison and spaceship operator
     std::strong_ordering operator<=>(const Value& other) const {
         if (getType() != other.getType()) {
             throw std::runtime_error("Cannot compare values of different types");
@@ -139,15 +139,15 @@ public:
         }, data);
     }
 
-    // 等于操作符需要单独实现，因为variant不支持defaulted comparison
+    // Equality operator needs separate implementation as variant doesn't support defaulted comparison
     bool operator==(const Value& other) const {
         return data == other.data;
     }
 
-    // 输出到流 - 声明为friend以访问private成员
+    // Stream output - declared as friend to access private members
     friend std::ostream& operator<<(std::ostream& os, const Value& value);
     
-    // 字符串表示 (兼容C++23的std::format)
+    // String representation (compatible with C++23 std::format)
     std::string toString() const {
         return std::visit([](const auto& value) -> std::string {
             using T = std::decay_t<decltype(value)>;
@@ -181,16 +181,16 @@ public:
 #endif
 };
 
-// C++23 列定义结构，使用designated initializers和defaulted comparison
+// C++23 column definition structure using designated initializers and defaulted comparison
 struct Column {
     std::string name;
     DataType type;
     
-    // C++23的designated initializers支持
+    // C++23 designated initializers support
     Column(const std::string& columnName, DataType columnType) 
         : name(columnName), type(columnType) {}
     
-    // 使用C++23的defaulted spaceship operator
+    // Using C++23 defaulted spaceship operator
     auto operator<=>(const Column& other) const = default;
 };
 

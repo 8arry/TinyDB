@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch.hpp"
 
-// 包含项目头文件
+// Include project header files
 #include "../libcore/database/database.hpp"
 #include "../libcore/database/persistence.hpp"
 #include "../libcore/sql/lexer.hpp"
@@ -13,7 +13,7 @@
 using namespace tinydb;
 using namespace tinydb::sql;
 
-// ========== SQL 解析测试 - 正确输入 ==========
+// ========== SQL Parsing Tests - Valid Input ==========
 
 TEST_CASE("SQL Parser - Valid CREATE TABLE", "[parser][create]") {
     std::string sql = "CREATE TABLE users (id int, name str);";
@@ -128,7 +128,7 @@ TEST_CASE("SQL Parser - Valid DELETE", "[parser][delete]") {
     REQUIRE(deleteStmt->getWhereCondition() != nullptr);
 }
 
-// ========== SQL 解析测试 - 错误输入 ==========
+// ========== SQL Parsing Tests - Invalid Input ==========
 
 TEST_CASE("SQL Parser - Invalid Syntax", "[parser][error]") {
     std::string sql = "INVALID SQL STATEMENT";
@@ -180,12 +180,12 @@ TEST_CASE("SQL Parser - Missing ON Clause in JOIN", "[parser][error]") {
     REQUIRE_THROWS_AS(parser.parse(), std::exception);
 }
 
-// ========== SQL 执行测试 - 正确输入 ==========
+// ========== SQL Execution Tests - Valid Input ==========
 
 TEST_CASE("SQL Execution - CREATE and INSERT", "[execution][basic]") {
     Database db;
     
-    // 创建表
+    // Create table
     std::vector<Column> cols = {
         {"id", DataType::INT},
         {"name", DataType::STR}
@@ -193,11 +193,11 @@ TEST_CASE("SQL Execution - CREATE and INSERT", "[execution][basic]") {
     
     REQUIRE_NOTHROW(db.createTable("users", cols));
     
-    // 插入数据
+    // Insert data
     std::vector<Value> values = {Value(1), Value(std::string("Alice"))};
     REQUIRE_NOTHROW(db.insertInto("users", values));
     
-    // 验证数据
+    // Verify data
     auto rows = db.selectFrom("users", {"*"});
     REQUIRE(rows.size() == 1);
 }
@@ -205,7 +205,7 @@ TEST_CASE("SQL Execution - CREATE and INSERT", "[execution][basic]") {
 TEST_CASE("SQL Execution - SELECT with Conditions", "[execution][select]") {
     Database db;
     
-    // 准备数据
+    // Prepare data
     std::vector<Column> cols = {
         {"id", DataType::INT},
         {"name", DataType::STR},
@@ -218,7 +218,7 @@ TEST_CASE("SQL Execution - SELECT with Conditions", "[execution][select]") {
     db.insertInto("users", user1);
     db.insertInto("users", user2);
     
-    // 测试查询
+    // Test queries
     auto allRows = db.selectFrom("users", {"*"});
     REQUIRE(allRows.size() == 2);
     
@@ -229,7 +229,7 @@ TEST_CASE("SQL Execution - SELECT with Conditions", "[execution][select]") {
 TEST_CASE("SQL Execution - JOIN Operations", "[execution][join]") {
     Database db;
     
-    // 创建员工表
+    // Create employee table
     std::vector<Column> empCols = {
         {"id", DataType::INT},
         {"name", DataType::STR},
@@ -237,38 +237,38 @@ TEST_CASE("SQL Execution - JOIN Operations", "[execution][join]") {
     };
     db.createTable("employees", empCols);
     
-    // 创建部门表
+    // Create department table
     std::vector<Column> deptCols = {
         {"id", DataType::INT},
         {"name", DataType::STR}
     };
     db.createTable("departments", deptCols);
     
-    // 插入测试数据
+    // Insert test data
     std::vector<Value> emp1 = {Value(1), Value(std::string("Alice")), Value(1)};
     std::vector<Value> dept1 = {Value(1), Value(std::string("Engineering"))};
     
     REQUIRE_NOTHROW(db.insertInto("employees", emp1));
     REQUIRE_NOTHROW(db.insertInto("departments", dept1));
     
-    // 验证表创建成功
+    // Verify table creation success
     auto empRows = db.selectFrom("employees", {"*"});
     auto deptRows = db.selectFrom("departments", {"*"});
     REQUIRE(empRows.size() == 1);
     REQUIRE(deptRows.size() == 1);
 }
 
-// ========== SQL 执行测试 - 错误输入 ==========
+// ========== SQL Execution Tests - Invalid Input ==========
 
 TEST_CASE("SQL Execution - Duplicate Table Creation", "[execution][error]") {
     Database db;
     
     std::vector<Column> cols = {{"id", DataType::INT}};
     
-    // 第一次创建应该成功
+    // First creation should succeed
     REQUIRE_NOTHROW(db.createTable("users", cols));
     
-    // 重复创建应该失败
+    // Duplicate creation should fail
     REQUIRE_THROWS_AS(db.createTable("users", cols), std::exception);
 }
 
@@ -286,7 +286,7 @@ TEST_CASE("SQL Execution - Select from Non-existent Table", "[execution][error]"
     REQUIRE_THROWS_AS(db.selectFrom("nonexistent", {"*"}), std::exception);
 }
 
-// ========== 数据类型测试 ==========
+// ========== Data Type Tests ==========
 
 TEST_CASE("Value Types - Integer Operations", "[value][int]") {
     Value intValue(42);
@@ -313,7 +313,7 @@ TEST_CASE("Value Types - Default Values", "[value][default]") {
     REQUIRE(defaultStr.toString() == "");
 }
 
-// ========== 边界情况测试 ==========
+// ========== Edge Case Tests ==========
 
 TEST_CASE("Edge Cases - Empty String Values", "[edge][string]") {
     Database db;
@@ -356,15 +356,15 @@ TEST_CASE("Edge Cases - Case Insensitive Keywords", "[edge][parser]") {
     REQUIRE(statement->getType() == Statement::Type::SELECT);
 }
 
-// ========== 持久化功能测试 ==========
+// ========== Persistence Functionality Tests ==========
 
 TEST_CASE("Persistence - Export and Import Database", "[persistence][basic]") {
     const std::string filename = "test_db_export.json";
     
-    // 创建测试数据库
+    // Create test database
     Database originalDb;
     
-    // 创建用户表
+    // Create users table
     std::vector<Column> userCols = {
         {"id", DataType::INT},
         {"name", DataType::STR},
@@ -372,7 +372,7 @@ TEST_CASE("Persistence - Export and Import Database", "[persistence][basic]") {
     };
     originalDb.createTable("users", userCols);
     
-    // 创建产品表
+    // Create products table
     std::vector<Column> productCols = {
         {"id", DataType::INT},
         {"name", DataType::STR},
@@ -380,7 +380,7 @@ TEST_CASE("Persistence - Export and Import Database", "[persistence][basic]") {
     };
     originalDb.createTable("products", productCols);
     
-    // 插入测试数据
+    // Insert test data
     std::vector<Value> user1 = {Value(1), Value(std::string("Alice")), Value(25)};
     std::vector<Value> user2 = {Value(2), Value(std::string("Bob")), Value(30)};
     originalDb.insertInto("users", user1);
@@ -391,48 +391,48 @@ TEST_CASE("Persistence - Export and Import Database", "[persistence][basic]") {
     originalDb.insertInto("products", product1);
     originalDb.insertInto("products", product2);
     
-    // 导出数据库
+    // Export database
     REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
     
-    // 导入数据库
+    // Import database
     Database importedDb;
     REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
     
-    // 验证表数量
+    // Verify table count
     REQUIRE(importedDb.getTableNames().size() == 2);
     REQUIRE(importedDb.hasTable("users"));
     REQUIRE(importedDb.hasTable("products"));
     
-    // 验证用户表数据
+    // Verify users table data
     auto userRows = importedDb.selectFrom("users", {"*"});
     REQUIRE(userRows.size() == 2);
     
-    // 验证产品表数据
+    // Verify products table data
     auto productRows = importedDb.selectFrom("products", {"*"});
     REQUIRE(productRows.size() == 2);
     
-    // 清理测试文件
+    // Clean up test files
     std::remove(filename.c_str());
 }
 
 TEST_CASE("Persistence - Empty Database Export/Import", "[persistence][empty]") {
     const std::string filename = "test_empty_db.json";
     
-    // 创建空数据库
+    // Create empty database
     Database originalDb;
     
-    // 导出空数据库
+    // Export empty database
     REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
     
-    // 导入空数据库
+    // Import empty database
     Database importedDb;
     REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
     
-    // 验证空数据库
+    // Verify empty database
     REQUIRE(importedDb.getTableNames().empty());
     REQUIRE(importedDb.getTableCount() == 0);
     
-    // 清理测试文件
+    // Clean up test files
     std::remove(filename.c_str());
 }
 
@@ -441,14 +441,14 @@ TEST_CASE("Persistence - Table with Special Characters", "[persistence][special]
     
     Database originalDb;
     
-    // 创建表
+    // Create table
     std::vector<Column> cols = {
         {"id", DataType::INT},
         {"text", DataType::STR}
     };
     originalDb.createTable("test_table", cols);
     
-    // 插入包含特殊字符的数据
+    // Insert data with special characters
     std::vector<Value> row1 = {Value(1), Value(std::string("Hello \"World\""))};
     std::vector<Value> row2 = {Value(2), Value(std::string("Line1\nLine2"))};
     std::vector<Value> row3 = {Value(3), Value(std::string("Tab\tSeparated"))};
@@ -457,17 +457,17 @@ TEST_CASE("Persistence - Table with Special Characters", "[persistence][special]
     originalDb.insertInto("test_table", row2);
     originalDb.insertInto("test_table", row3);
     
-    // 导出和导入
+    // Export and import
     REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
     
     Database importedDb;
     REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
     
-    // 验证数据
+    // Verify data
     auto rows = importedDb.selectFrom("test_table", {"*"});
     REQUIRE(rows.size() == 3);
     
-    // 清理测试文件
+    // Clean up test files
     std::remove(filename.c_str());
 }
 
@@ -476,7 +476,7 @@ TEST_CASE("Persistence - Large Dataset", "[persistence][large]") {
     
     Database originalDb;
     
-    // 创建表
+    // Create table
     std::vector<Column> cols = {
         {"id", DataType::INT},
         {"name", DataType::STR},
@@ -484,7 +484,7 @@ TEST_CASE("Persistence - Large Dataset", "[persistence][large]") {
     };
     originalDb.createTable("large_table", cols);
     
-    // 插入大量数据
+    // Insert large amount of data
     const int numRows = 100;
     for (int i = 1; i <= numRows; ++i) {
         std::vector<Value> row = {
@@ -495,26 +495,26 @@ TEST_CASE("Persistence - Large Dataset", "[persistence][large]") {
         originalDb.insertInto("large_table", row);
     }
     
-    // 导出和导入
+    // Export and import
     REQUIRE_NOTHROW(PersistenceManager::exportDatabase(originalDb, filename));
     
     Database importedDb;
     REQUIRE_NOTHROW(importedDb = PersistenceManager::importDatabase(filename));
     
-    // 验证数据量
+    // Verify data amount
     auto rows = importedDb.selectFrom("large_table", {"*"});
     REQUIRE(rows.size() == numRows);
     
-    // 清理测试文件
+    // Clean up test files
     std::remove(filename.c_str());
 }
 
-// ========== 持久化错误处理测试 ==========
+// ========== Persistence Error Handling Tests ==========
 
 TEST_CASE("Persistence - Export to Invalid Path", "[persistence][error]") {
     Database db;
     
-    // 尝试导出到无效路径
+    // Attempt to export to invalid path
     REQUIRE_THROWS_AS(
         PersistenceManager::exportDatabase(db, "/invalid/path/test.json"),
         PersistenceError
@@ -522,7 +522,7 @@ TEST_CASE("Persistence - Export to Invalid Path", "[persistence][error]") {
 }
 
 TEST_CASE("Persistence - Import Nonexistent File", "[persistence][error]") {
-    // 尝试导入不存在的文件
+    // Attempt to import non-existent file
     REQUIRE_THROWS_AS(
         PersistenceManager::importDatabase("nonexistent_file.json"),
         PersistenceError
@@ -532,23 +532,23 @@ TEST_CASE("Persistence - Import Nonexistent File", "[persistence][error]") {
 TEST_CASE("Persistence - Import Invalid JSON", "[persistence][error]") {
     const std::string filename = "test_invalid.json";
     
-    // 创建无效的JSON文件
+    // Create invalid JSON file
     std::ofstream file(filename);
     file << "{ invalid json content }";
     file.close();
     
-    // 尝试导入无效JSON
+    // Attempt to import invalid JSON
     REQUIRE_THROWS_AS(
         PersistenceManager::importDatabase(filename),
         PersistenceError
     );
     
-    // 清理测试文件
+    // Clean up test files
     std::remove(filename.c_str());
 }
 
 TEST_CASE("Persistence - Value Type Conversion", "[persistence][value]") {
-    // 测试JSON值转换
+    // Test JSON value conversion
     REQUIRE_NOTHROW({
         Value intVal = PersistenceManager::jsonToValue("42", DataType::INT);
         REQUIRE(intVal.getType() == DataType::INT);
@@ -561,7 +561,7 @@ TEST_CASE("Persistence - Value Type Conversion", "[persistence][value]") {
         REQUIRE(strVal.toString() == "Hello World");
     });
     
-    // 测试Value到JSON转换
+    // Test Value to JSON conversion
     REQUIRE_NOTHROW({
         Value intVal(123);
         std::string json = PersistenceManager::valueToJson(intVal);
@@ -575,12 +575,12 @@ TEST_CASE("Persistence - Value Type Conversion", "[persistence][value]") {
     });
 }
 
-// ========== 扩展WHERE条件测试 ==========
+// ========== Extended WHERE Condition Tests ==========
 
 TEST_CASE("Extended WHERE - Comparison Operators", "[where][comparison]") {
     Database db;
     
-    // 创建测试表
+    // Create test table
     std::vector<Column> cols = {
         {"id", DataType::INT},
         {"value", DataType::INT},
@@ -588,7 +588,7 @@ TEST_CASE("Extended WHERE - Comparison Operators", "[where][comparison]") {
     };
     db.createTable("numbers", cols);
     
-    // 插入测试数据
+    // Insert test data
     std::vector<Value> row1 = {Value(1), Value(10), Value(std::string("Ten"))};
     std::vector<Value> row2 = {Value(2), Value(20), Value(std::string("Twenty"))};
     std::vector<Value> row3 = {Value(3), Value(30), Value(std::string("Thirty"))};
@@ -599,7 +599,7 @@ TEST_CASE("Extended WHERE - Comparison Operators", "[where][comparison]") {
     db.insertInto("numbers", row3);
     db.insertInto("numbers", row4);
     
-    // 验证数据插入
+    // Verify data insertion
     auto allRows = db.selectFrom("numbers", {"*"});
     REQUIRE(allRows.size() == 4);
 }
@@ -690,7 +690,7 @@ TEST_CASE("Extended WHERE - All Operators Parsing", "[where][all]") {
     }
 }
 
-// ========== 逻辑运算符测试 ==========
+// ========== Logical Operator Tests ==========
 
 TEST_CASE("Logical Operators - AND Parsing", "[where][logical][and]") {
     std::string sql = "SELECT * FROM employees WHERE age > 25 AND department = \"IT\";";
@@ -763,7 +763,7 @@ TEST_CASE("Logical Operators - Mixed AND OR", "[where][logical][mixed]") {
 TEST_CASE("Logical Operators - Execution Test", "[where][logical][execution]") {
     Database db;
     
-    // 创建测试表
+    // Create test table
     std::vector<Column> cols = {
         {"id", DataType::INT},
         {"age", DataType::INT},
@@ -772,7 +772,7 @@ TEST_CASE("Logical Operators - Execution Test", "[where][logical][execution]") {
     };
     db.createTable("employees", cols);
     
-    // 插入测试数据
+    // Insert test data
     std::vector<Value> row1 = {Value(1), Value(25), Value(5000), Value(std::string("IT"))};
     std::vector<Value> row2 = {Value(2), Value(30), Value(6000), Value(std::string("HR"))};
     std::vector<Value> row3 = {Value(3), Value(35), Value(7000), Value(std::string("IT"))};
@@ -781,12 +781,12 @@ TEST_CASE("Logical Operators - Execution Test", "[where][logical][execution]") {
     db.insertInto("employees", row2);
     db.insertInto("employees", row3);
     
-    // 验证数据插入
+    // Verify data insertion
     auto allRows = db.selectFrom("employees", {"*"});
     REQUIRE(allRows.size() == 3);
 }
 
-// ========== 括号和优先级测试 ==========
+// ========== Parentheses and Precedence Tests ==========
 
 TEST_CASE("Parentheses - Simple Grouping", "[where][parentheses][simple]") {
     std::string sql = "SELECT * FROM test WHERE (age > 25 AND department = \"IT\");";
@@ -857,7 +857,7 @@ TEST_CASE("Parentheses - Mixed with AND OR", "[where][parentheses][mixed]") {
 }
 
 TEST_CASE("Parentheses - Precedence Change", "[where][parentheses][precedence]") {
-    // 测试括号改变优先级的情况
+    // Test cases where parentheses change precedence
     std::vector<std::string> precedenceQueries = {
         "SELECT * FROM test WHERE a = 1 AND b = 2 OR c = 3;",           // (a=1 AND b=2) OR c=3
         "SELECT * FROM test WHERE a = 1 AND (b = 2 OR c = 3);",         // a=1 AND (b=2 OR c=3)
@@ -882,10 +882,10 @@ TEST_CASE("Parentheses - Precedence Change", "[where][parentheses][precedence]")
 }
 
 TEST_CASE("Parentheses - Error Handling", "[where][parentheses][error]") {
-    // 测试括号不匹配的错误处理
+    // Test error handling for mismatched parentheses
     std::vector<std::string> errorQueries = {
-        "SELECT * FROM test WHERE (age > 25 AND department = \"IT\";",    // 缺少右括号
-        "SELECT * FROM test WHERE ((age > 25) AND department = \"IT\";",  // 嵌套括号不匹配
+        "SELECT * FROM test WHERE (age > 25 AND department = \"IT\";",    // Missing right parenthesis
+        "SELECT * FROM test WHERE ((age > 25) AND department = \"IT\";",  // Nested mismatched parentheses
     };
     
     for (const auto& sql : errorQueries) {
@@ -897,14 +897,14 @@ TEST_CASE("Parentheses - Error Handling", "[where][parentheses][error]") {
         }, ParseError);
     }
     
-    // 测试多余右括号的情况 - 这个可能不会在解析时立即报错，而是在执行时
+    // Test cases with extra right parentheses - this might not immediately throw during parsing, but during execution
     REQUIRE_NOTHROW({
         std::string sql = "SELECT * FROM test WHERE age > 25 AND department = \"IT\");";
         Lexer lexer(sql);
         auto tokens = lexer.tokenize();
         Parser parser(std::move(tokens));
-        // 注意：多余的右括号可能在WHERE条件解析完成后仍然存在，这在当前实现中可能不会报错
-        // 因为Parser可能只解析到WHERE条件结束就停止了
-        auto statement = parser.parse();  // 这个可能不会报错，因为WHERE部分解析正确
+            // Note: Extra right parentheses might still exist after WHERE condition parsing, which might not throw an error in the current implementation
+    // because the Parser might stop after correctly parsing the WHERE clause
+    auto statement = parser.parse();  // This might not throw an error because the WHERE part is parsed correctly
     });
 }

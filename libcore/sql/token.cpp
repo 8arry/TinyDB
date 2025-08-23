@@ -4,7 +4,7 @@
 
 namespace tinydb::sql {
 
-// Token输出流操作符实现
+// Token stream output operator implementation
 std::ostream& operator<<(std::ostream& os, const Token& token) {
     os << "Token{" << token.type;
     

@@ -7,9 +7,9 @@
 
 namespace tinydb::sql {
 
-// Token类型枚举
+// Token type enumeration
 enum class TokenType {
-    // 关键字
+    // Keywords
     CREATE,
     TABLE,
     INSERT,
@@ -28,50 +28,50 @@ enum class TokenType {
     JOIN,       // JOIN
     ON,         // ON (for JOIN condition)
     
-    // 数据类型关键字 (符合项目要求)
+    // Data type keywords (meets project requirements)
     INT,        // int
     STR,        // str
     
-    // 标识符和字面量
-    IDENTIFIER,     // 表名、列名等
-    INTEGER,        // 整数字面量
-    STRING_LITERAL, // 字符串字面量
+    // Identifiers and literals
+    IDENTIFIER,     // Table names, column names, etc.
+    INTEGER,        // Integer literals
+    STRING_LITERAL, // String literals
     
-    // 操作符
+    // Operators
     EQUAL,          // =
     NOT_EQUAL,      // !=
     LESS_THAN,      // <
     GREATER_THAN,   // >
     LESS_EQUAL,     // <=
     GREATER_EQUAL,  // >=
-    ASTERISK,       // * (用于SELECT *和乘法)
-    SLASH,          // / (除法)
+    ASTERISK,       // * (for SELECT * and multiplication)
+    SLASH,          // / (division)
     
-    // 分隔符
+    // Separators
     LEFT_PAREN,     // (
     RIGHT_PAREN,    // )
     COMMA,          // ,
     SEMICOLON,      // ;
     DOT,            // . (for table.column)
     
-    // 特殊标记
-    WHITESPACE,     // 空白符
-    END_OF_FILE,    // 文件结束
-    UNKNOWN         // 未知字符
+    // Special tokens
+    WHITESPACE,     // Whitespace
+    END_OF_FILE,    // End of file
+    UNKNOWN         // Unknown character
 };
 
-// Token值类型 - 可以是字符串、整数或空
+// Token value type - can be string, integer or empty
 using TokenValue = std::variant<std::monostate, std::string, int>;
 
-// Token结构
+// Token structure
 struct Token {
     TokenType type;
     TokenValue value;
-    size_t position;    // 在源文本中的位置
-    size_t line;        // 行号
-    size_t column;      // 列号
+    size_t position;    // Position in source text
+    size_t line;        // Line number
+    size_t column;      // Column number
     
-    // 构造函数
+    // Constructors
     Token() : type(TokenType::UNKNOWN), value(std::monostate{}), position(0), line(1), column(1) {}
     
     Token(TokenType t, size_t pos = 0, size_t ln = 1, size_t col = 1)
@@ -83,7 +83,7 @@ struct Token {
     Token(TokenType t, int val, size_t pos = 0, size_t ln = 1, size_t col = 1)
         : type(t), value(val), position(pos), line(ln), column(col) {}
     
-    // 辅助方法
+    // Helper methods
     bool hasStringValue() const {
         return std::holds_alternative<std::string>(value);
     }
@@ -104,7 +104,7 @@ struct Token {
         return std::get<int>(value);
     }
     
-    // 比较操作
+    // Comparison operations
     bool operator==(const Token& other) const {
         return type == other.type && value == other.value;
     }
@@ -114,10 +114,10 @@ struct Token {
     }
 };
 
-// Token类型工具函数
+// Token type utility functions
 class TokenUtils {
 public:
-    // 关键字映射
+    // Keywords mapping
     static const std::unordered_set<std::string>& getKeywords() {
         static const std::unordered_set<std::string> keywords = {
             "CREATE", "TABLE", "INSERT", "INTO", "VALUES",
@@ -127,12 +127,12 @@ public:
         return keywords;
     }
     
-    // 检查是否为关键字
+    // Check if string is a keyword
     static bool isKeyword(const std::string& word) {
         return getKeywords().contains(word);
     }
     
-    // 字符串转TokenType
+    // Convert string to TokenType
     static TokenType stringToTokenType(const std::string& word) {
         std::string upperWord = toUpperCase(word);
         
@@ -156,10 +156,10 @@ public:
         if (upperWord == "INT") return TokenType::INT;
         if (upperWord == "STR") return TokenType::STR;
         
-        return TokenType::IDENTIFIER; // 不是关键字则为标识符
+        return TokenType::IDENTIFIER; // If not a keyword, then it's an identifier
     }
     
-    // TokenType转字符串
+    // Convert TokenType to string
     static std::string tokenTypeToString(TokenType type) {
         switch (type) {
             case TokenType::CREATE: return "CREATE";
@@ -204,7 +204,7 @@ public:
         }
     }
     
-    // 字符串转大写
+    // Convert string to uppercase
     static std::string toUpperCase(const std::string& str) {
         std::string result = str;
         for (char& c : result) {
@@ -213,7 +213,7 @@ public:
         return result;
     }
     
-    // 检查字符类型
+    // Check character type
     static bool isAlpha(char c) {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     }
@@ -239,7 +239,7 @@ public:
     }
 };
 
-// Token输出流操作符
+// Token output stream operator
 std::ostream& operator<<(std::ostream& os, const Token& token);
 std::ostream& operator<<(std::ostream& os, TokenType type);
 

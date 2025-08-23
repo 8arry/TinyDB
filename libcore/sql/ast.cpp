@@ -8,7 +8,7 @@
 
 namespace tinydb::sql {
 
-// LiteralExpression实现
+// LiteralExpression implementation
 std::string LiteralExpression::toString() const {
 #ifdef HAS_FORMAT
     return std::format("Literal({})", value_.toString());
@@ -17,10 +17,10 @@ std::string LiteralExpression::toString() const {
 #endif
 }
 
-// ColumnExpression实现
+// ColumnExpression implementation
 tinydb::Value ColumnExpression::evaluate() const {
-    // 列表达式的求值需要在执行时提供行上下文
-    // 这里只是占位实现，实际求值在执行器中进行
+    // Column expression evaluation requires row context at execution time
+    // This is a placeholder implementation, actual evaluation is done in the executor
     throw std::runtime_error("Column expression evaluation requires row context");
 }
 
@@ -40,7 +40,7 @@ std::string ColumnExpression::toString() const {
 #endif
 }
 
-// CreateTableStatement实现
+// CreateTableStatement implementation
 CreateTableStatement::CreateTableStatement(std::string table_name, std::vector<tinydb::Column> columns)
     : table_name_(std::move(table_name)), columns_(std::move(columns)) {}
 
@@ -55,7 +55,7 @@ std::string CreateTableStatement::toString() const {
     return result;
 }
 
-// InsertStatement实现
+// InsertStatement implementation
 std::string InsertStatement::toString() const {
     std::string result = "INSERT INTO " + table_name_;
     
@@ -78,7 +78,7 @@ std::string InsertStatement::toString() const {
     return result;
 }
 
-// JoinClause实现
+// JoinClause implementation
 JoinClause::~JoinClause() {
     delete on_condition_;
 }
@@ -97,7 +97,7 @@ std::string JoinClause::toString() const {
     return result;
 }
 
-// SelectStatement实现
+// SelectStatement implementation
 SelectStatement::~SelectStatement() {
     delete where_condition_;
 }
@@ -116,7 +116,7 @@ std::string SelectStatement::toString() const {
     
     result += " FROM " + table_name_;
     
-    // 添加JOIN子句
+    // Add JOIN clause
     for (const auto& join : joins_) {
         result += " " + join->toString();
     }
@@ -128,7 +128,7 @@ std::string SelectStatement::toString() const {
     return result;
 }
 
-// UpdateStatement实现
+// UpdateStatement implementation
 UpdateStatement::~UpdateStatement() {
     delete where_condition_;
 }
@@ -148,7 +148,7 @@ std::string UpdateStatement::toString() const {
     return result;
 }
 
-// DeleteStatement实现
+// DeleteStatement implementation
 DeleteStatement::~DeleteStatement() {
     delete where_condition_;
 }

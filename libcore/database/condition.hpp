@@ -8,11 +8,11 @@
 
 namespace tinydb {
 
-// 前向声明
+// Forward declarations
 class Row;
 class Table;
 
-// 比较操作符枚举
+// Comparison operator enumeration
 enum class ComparisonOp {
     EQUAL,          // =
     NOT_EQUAL,      // !=
@@ -22,34 +22,34 @@ enum class ComparisonOp {
     GREATER_EQUAL   // >=
 };
 
-// 逻辑操作符枚举
+// Logical operator enumeration
 enum class LogicalOp {
     AND,
     OR,
     NOT
 };
 
-// 条件值类型 - 可以是字面量或列引用
+// Condition value type - can be literal or column reference
 class ConditionValue {
 public:
     enum class Type {
-        LITERAL,    // 字面量值
-        COLUMN      // 列引用
+            LITERAL,    // Literal value
+    COLUMN      // Column reference
     };
 
 private:
     Type type;
-    std::variant<Value, std::string> data; // Value为字面量，string为列名
+    std::variant<Value, std::string> data; // Value for literal, string for column name
 
 public:
-    // 构造函数
+    // Constructors
     explicit ConditionValue(Value literal) 
         : type(Type::LITERAL), data(std::move(literal)) {}
     
     explicit ConditionValue(std::string columnName) 
         : type(Type::COLUMN), data(std::move(columnName)) {}
     
-    // 从各种类型创建
+    // Create from various types
     static ConditionValue literal(int value) {
         return ConditionValue(Value{value});
     }
@@ -66,7 +66,7 @@ public:
         return ConditionValue(columnName);
     }
 
-    // 获取方法
+    // Get methods
     Type getType() const noexcept { return type; }
     
     bool isLiteral() const noexcept { return type == Type::LITERAL; }
@@ -86,22 +86,22 @@ public:
         return std::get<std::string>(data);
     }
     
-    // 求值 - 从行和表中获取实际值
+    // Evaluate - get actual value from row and table
     Value evaluate(const Row& row, const Table& table) const;
 };
 
-// 条件表达式基类
+// Condition expression base class
 class Condition {
 public:
     virtual ~Condition() = default;
     virtual bool evaluate(const Row& row, const Table& table) const = 0;
     virtual std::string toString() const = 0;
     
-    // 克隆方法支持深拷贝
+    // Clone method supports deep copy
     virtual std::unique_ptr<Condition> clone() const = 0;
 };
 
-// 比较条件
+// Comparison condition
 class ComparisonCondition : public Condition {
 private:
     ConditionValue left;
@@ -116,21 +116,21 @@ public:
     std::string toString() const override;
     std::unique_ptr<Condition> clone() const override;
 
-    // 获取组件
+    // Get components
     const ConditionValue& getLeft() const { return left; }
     const ConditionValue& getRight() const { return right; }
     ComparisonOp getOperator() const { return op; }
 };
 
-// 逻辑条件
+// Logical condition
 class LogicalCondition : public Condition {
 private:
     std::unique_ptr<Condition> left;
     LogicalOp op;
-    std::unique_ptr<Condition> right; // NOT操作时为nullptr
+    std::unique_ptr<Condition> right; // nullptr for NOT operations
 
 public:
-    // AND/OR构造函数
+    // AND/OR constructor
     LogicalCondition(std::unique_ptr<Condition> leftCond, LogicalOp operation, 
                     std::unique_ptr<Condition> rightCond)
         : left(std::move(leftCond)), op(operation), right(std::move(rightCond)) {
@@ -139,7 +139,7 @@ public:
         }
     }
 
-    // NOT构造函数
+    // NOT constructor
     LogicalCondition(LogicalOp operation, std::unique_ptr<Condition> condition)
         : left(std::move(condition)), op(operation), right(nullptr) {
         if (op != LogicalOp::NOT) {
@@ -151,21 +151,21 @@ public:
     std::string toString() const override;
     std::unique_ptr<Condition> clone() const override;
 
-    // 获取组件
+    // Get components
     const Condition* getLeft() const { return left.get(); }
     const Condition* getRight() const { return right.get(); }
     LogicalOp getOperator() const { return op; }
 };
 
-// 条件构建器 - 提供流式API
+// Condition builder - provides fluent API
 class ConditionBuilder {
 public:
-    // 比较操作
+    // Comparison operations
     static std::unique_ptr<Condition> compare(ConditionValue left, ComparisonOp op, ConditionValue right) {
         return std::make_unique<ComparisonCondition>(std::move(left), op, std::move(right));
     }
     
-    // 便利方法
+    // Convenience methods
     static std::unique_ptr<Condition> equal(ConditionValue left, ConditionValue right) {
         return compare(std::move(left), ComparisonOp::EQUAL, std::move(right));
     }
@@ -190,7 +190,7 @@ public:
         return compare(std::move(left), ComparisonOp::GREATER_EQUAL, std::move(right));
     }
 
-    // 逻辑操作
+    // Logical operations
     static std::unique_ptr<Condition> and_(std::unique_ptr<Condition> left, std::unique_ptr<Condition> right) {
         return std::make_unique<LogicalCondition>(std::move(left), LogicalOp::AND, std::move(right));
     }
@@ -204,14 +204,14 @@ public:
     }
 };
 
-// 条件工厂 - 简化条件创建
+// Condition factory - simplifies condition creation
 namespace Conditions {
-    // 列引用
+    // Column reference
     inline ConditionValue col(const std::string& name) {
         return ConditionValue::column(name);
     }
     
-    // 字面量
+    // Literal
     inline ConditionValue val(int value) {
         return ConditionValue::literal(value);
     }

@@ -16,7 +16,7 @@ void PersistenceManager::exportDatabase(const Database& database, const std::str
         file << "  \"database_name\": \"TinyDB\",\n";
         file << "  \"tables\": {\n";
         
-        // 获取所有表名
+        // Get all table names
         auto tableNames = database.getTableNames();
         
         for (size_t i = 0; i < tableNames.size(); ++i) {
@@ -62,7 +62,7 @@ Database PersistenceManager::importDatabase(const std::string& filename) {
         
         Database database;
         
-        // 简单的JSON解析 - 查找tables对象
+        // Simple JSON parsing - find tables object
         auto tablesStart = content.find("\"tables\": {");
         if (tablesStart == std::string::npos) {
             throw PersistenceError("Invalid file format: missing 'tables' section");
@@ -77,10 +77,10 @@ Database PersistenceManager::importDatabase(const std::string& filename) {
         
         std::string tablesContent = content.substr(tablesStart + 1, tablesEnd - tablesStart - 1);
         
-        // 解析每个表
+        // Parse each table
         size_t pos = 0;
         while (pos < tablesContent.length()) {
-            // 查找表名
+            // Find table name
             auto nameStart = tablesContent.find("\"", pos);
             if (nameStart == std::string::npos) break;
             
@@ -89,14 +89,14 @@ Database PersistenceManager::importDatabase(const std::string& filename) {
             
             std::string tableName = tablesContent.substr(nameStart + 1, nameEnd - nameStart - 1);
             
-            // 查找表的JSON内容
+            // Find table's JSON content
             auto colonPos = tablesContent.find(":", nameEnd);
             if (colonPos == std::string::npos) break;
             
             auto tableStart = tablesContent.find("{", colonPos);
             if (tableStart == std::string::npos) break;
             
-            // 查找匹配的右大括号
+            // Find matching right brace
             int braceCount = 1;
             size_t tableEnd = tableStart + 1;
             while (tableEnd < tablesContent.length() && braceCount > 0) {
@@ -107,7 +107,7 @@ Database PersistenceManager::importDatabase(const std::string& filename) {
             
             std::string tableJson = tablesContent.substr(tableStart, tableEnd - tableStart);
             
-            // 导入表
+            // Import table
             importTableFromJson(tableJson, database, tableName);
             
             pos = tableEnd;
@@ -129,7 +129,7 @@ std::string PersistenceManager::exportTableToJson(const Table& table, const std:
     json << "{\n";
     json << "      \"name\": \"" << tableName << "\",\n";
     
-    // 导出表结构
+    // Export table structure
     const auto& schema = table.getSchema();
     json << "      \"schema\": [\n";
     
@@ -148,7 +148,7 @@ std::string PersistenceManager::exportTableToJson(const Table& table, const std:
     
     json << "      ],\n";
     
-    // 导出数据
+    // Export data
     const auto& rows = table.getAllRows();
     json << "      \"data\": [\n";
     
@@ -182,11 +182,11 @@ std::string PersistenceManager::exportTableToJson(const Table& table, const std:
 
 void PersistenceManager::importTableFromJson(const std::string& json, Database& database, const std::string& tableName) {
     try {
-        // 解析表结构
+        // Parse table structure
         std::string schemaStr = parseJsonArray(json, "schema");
         std::vector<Column> columns;
         
-        // 简单解析schema数组
+        // Simple parse schema array
         size_t pos = 0;
         while (pos < schemaStr.length()) {
             auto objStart = schemaStr.find("{", pos);
@@ -206,13 +206,13 @@ void PersistenceManager::importTableFromJson(const std::string& json, Database& 
             pos = objEnd + 1;
         }
         
-        // 创建表
+        // Create table
         database.createTable(tableName, columns);
         
-        // 解析数据
+        // Parse data
         std::string dataStr = parseJsonArray(json, "data");
         
-        // 解析数据行
+        // Parse data rows
         pos = 0;
         while (pos < dataStr.length()) {
             auto arrayStart = dataStr.find("[", pos);
@@ -223,30 +223,30 @@ void PersistenceManager::importTableFromJson(const std::string& json, Database& 
             
             std::string rowStr = dataStr.substr(arrayStart + 1, arrayEnd - arrayStart - 1);
             
-            // 解析行中的值
+            // Parse values in the row
             std::vector<Value> values;
             size_t valuePos = 0;
             size_t columnIndex = 0;
             
             while (valuePos < rowStr.length() && columnIndex < columns.size()) {
-                // 跳过空白字符和逗号
+                // Skip whitespace and commas
                 while (valuePos < rowStr.length() && (rowStr[valuePos] == ' ' || rowStr[valuePos] == ',')) {
                     valuePos++;
                 }
                 
                 if (valuePos >= rowStr.length()) break;
                 
-                // 解析值
+                // Parse value
                 std::string valueStr;
                 if (rowStr[valuePos] == '"') {
-                    // 字符串值
+                    // String value
                     auto stringEnd = rowStr.find("\"", valuePos + 1);
                     if (stringEnd != std::string::npos) {
                         valueStr = rowStr.substr(valuePos + 1, stringEnd - valuePos - 1);
                         valuePos = stringEnd + 1;
                     }
                 } else {
-                    // 数字值
+                    // Numeric value
                     auto nextComma = rowStr.find(",", valuePos);
                     if (nextComma == std::string::npos) {
                         valueStr = rowStr.substr(valuePos);
@@ -256,19 +256,19 @@ void PersistenceManager::importTableFromJson(const std::string& json, Database& 
                         valuePos = nextComma;
                     }
                     
-                    // 去除空白字符
+                    // Remove whitespace
                     while (!valueStr.empty() && valueStr.back() == ' ') {
                         valueStr.pop_back();
                     }
                 }
                 
-                // 创建Value对象
+                // Create Value object
                 Value value = jsonToValue(valueStr, columns[columnIndex].type);
                 values.push_back(value);
                 columnIndex++;
             }
             
-            // 插入行
+            // Insert row
             if (!values.empty()) {
                 database.insertInto(tableName, values);
             }
@@ -400,7 +400,7 @@ std::string PersistenceManager::parseJsonArray(const std::string& json, const st
         throw PersistenceError("Array not found for key: " + key);
     }
     
-    // 查找匹配的右方括号
+    // Find matching right bracket
     int bracketCount = 1;
     size_t arrayEnd = arrayStart + 1;
     while (arrayEnd < json.length() && bracketCount > 0) {

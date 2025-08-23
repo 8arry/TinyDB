@@ -6,7 +6,7 @@
 
 namespace tinydb {
 
-// Table 构造函数
+// Table constructors
 Table::Table(std::string name, std::vector<Column> columns)
     : schema(std::move(columns)), tableName(std::move(name)) {
     if (schema.empty()) {
@@ -17,7 +17,7 @@ Table::Table(std::string name, std::vector<Column> columns)
     }
 }
 
-// 内部辅助方法
+// Internal helper methods
 size_t Table::findColumnIndex(const std::string& columnName) const {
     for (size_t i = 0; i < schema.size(); ++i) {
         if (schema[i].name == columnName) {
@@ -34,7 +34,7 @@ void Table::validateRow(const Row& row) const {
             " values, but table has " + std::to_string(schema.size()) + " columns");
     }
 
-    // 检查类型匹配
+    // Check type matching
     for (size_t i = 0; i < schema.size(); ++i) {
         if (row[i].getType() != schema[i].type) {
             throw std::invalid_argument(
@@ -51,7 +51,7 @@ void Table::validateColumnExists(const std::string& columnName) const {
     }
 }
 
-// 列信息方法
+// Column information methods
 const Column& Table::getColumn(size_t index) const {
     if (index >= schema.size()) {
         throw std::out_of_range("Column index out of range");
@@ -84,7 +84,7 @@ std::vector<std::string> Table::getColumnNames() const {
     return names;
 }
 
-// 数据插入
+// Data insertion
 void Table::insertRow(Row row) {
     validateRow(row);
     rows.emplace_back(std::move(row));
@@ -94,14 +94,14 @@ void Table::insertRow(std::vector<Value> values) {
     insertRow(Row{std::move(values)});
 }
 
-// 查询操作
+// Query operations
 std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames) const {
-    // 处理 "*" 通配符
+    // Handle "*" wildcard
     if (columnNames.size() == 1 && columnNames[0] == "*") {
-        return rows; // 返回所有行的拷贝
+        return rows; // Return copy of all rows
     }
 
-    // 验证列存在
+    // Validate columns exist
     std::vector<size_t> columnIndices;
     columnIndices.reserve(columnNames.size());
     
@@ -110,7 +110,7 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames) 
         columnIndices.push_back(findColumnIndex(columnName));
     }
 
-    // 构建结果
+    // Build result
     std::vector<Row> result;
     result.reserve(rows.size());
 
@@ -130,7 +130,7 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames) 
 
 std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames,
                                   const std::function<bool(const Row&, const Table&)>& condition) const {
-    // 先过滤行，再投影列
+    // Filter rows first, then project columns
     std::vector<Row> filteredRows;
     
     for (const auto& row : rows) {
@@ -139,12 +139,12 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames,
         }
     }
 
-    // 如果没有列名限制，返回所有列
+    // If no column restriction, return all columns
     if (columnNames.empty() || (columnNames.size() == 1 && columnNames[0] == "*")) {
         return filteredRows;
     }
 
-    // 投影指定列
+    // Project specified columns
     std::vector<size_t> columnIndices;
     columnIndices.reserve(columnNames.size());
     
@@ -170,16 +170,16 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames,
     return result;
 }
 
-// 更新操作
+// Update operations
 size_t Table::updateRows(const std::function<bool(const Row&, const Table&)>& condition,
                         const std::unordered_map<std::string, Value>& updates) {
     size_t updatedCount = 0;
 
-    // 验证更新的列存在
+    // Validate that columns to update exist
     for (const auto& [columnName, value] : updates) {
         validateColumnExists(columnName);
         
-        // 验证类型匹配
+        // Validate type matching
         const auto& column = getColumn(columnName);
         if (value.getType() != column.type) {
             throw std::invalid_argument(
@@ -189,7 +189,7 @@ size_t Table::updateRows(const std::function<bool(const Row&, const Table&)>& co
         }
     }
 
-    // 执行更新
+    // Execute update
     for (auto& row : rows) {
         if (condition(row, *this)) {
             for (const auto& [columnName, value] : updates) {
@@ -203,7 +203,7 @@ size_t Table::updateRows(const std::function<bool(const Row&, const Table&)>& co
     return updatedCount;
 }
 
-// 删除操作
+// Delete operations
 size_t Table::deleteRows(const std::function<bool(const Row&, const Table&)>& condition) {
     size_t originalSize = rows.size();
     
@@ -217,7 +217,7 @@ size_t Table::deleteRows(const std::function<bool(const Row&, const Table&)>& co
     return originalSize - rows.size();
 }
 
-// 行访问
+// Row access
 const Row& Table::getRow(size_t index) const {
     if (index >= rows.size()) {
         throw std::out_of_range("Row index out of range");
@@ -232,7 +232,7 @@ Row& Table::getRow(size_t index) {
     return rows[index];
 }
 
-// 值访问
+// Value access
 const Value& Table::getValue(size_t rowIndex, const std::string& columnName) const {
     if (rowIndex >= rows.size()) {
         throw std::out_of_range("Row index out of range");
@@ -251,7 +251,7 @@ Value& Table::getValue(size_t rowIndex, const std::string& columnName) {
     return rows[rowIndex][columnIndex];
 }
 
-// 列值获取
+// Column value retrieval
 std::vector<Value> Table::getColumnValues(const std::string& columnName) const {
     size_t columnIndex = findColumnIndex(columnName);
     
@@ -265,7 +265,7 @@ std::vector<Value> Table::getColumnValues(const std::string& columnName) const {
     return values;
 }
 
-// 调试输出方法
+// Debug output methods
 void Table::printSchema() const {
     std::cout << "Table: " << tableName << "\n";
     std::cout << "Columns:\n";
@@ -298,21 +298,21 @@ void Table::printData() const {
 void Table::printTable() const {
     std::cout << "\n=== Table: " << tableName << " ===\n";
     
-    // 打印列头
+    // Print column headers
     for (size_t i = 0; i < schema.size(); ++i) {
         if (i > 0) std::cout << " | ";
         std::cout << std::setw(12) << std::left << schema[i].name;
     }
     std::cout << "\n";
     
-    // 打印分隔线
+    // Print separator line
     for (size_t i = 0; i < schema.size(); ++i) {
         if (i > 0) std::cout << "-+-";
         std::cout << std::string(12, '-');
     }
     std::cout << "\n";
     
-    // 打印数据
+    // Print data
     for (const auto& row : rows) {
         for (size_t i = 0; i < row.size(); ++i) {
             if (i > 0) std::cout << " | ";

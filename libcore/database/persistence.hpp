@@ -12,31 +12,31 @@
 namespace tinydb {
 
 /**
- * @brief 数据库持久化管理器
- * 
- * 负责将数据库导出到文件和从文件恢复数据库
- * 使用JSON格式存储，便于调试和跨平台兼容
+  * @brief Database persistence manager
+ *
+ * Responsible for exporting database to files and restoring database from files
+ * Uses JSON format for storage, convenient for debugging and cross-platform compatibility
  */
 class PersistenceManager {
 public:
     /**
-     * @brief 将数据库导出到文件
-     * @param database 要导出的数据库
-     * @param filename 目标文件名
-     * @throws std::runtime_error 如果导出失败
+      * @brief Export database to file
+ * @param database Database to export
+ * @param filename Target filename
+ * @throws std::runtime_error If export fails
      */
     static void exportDatabase(const Database& database, const std::string& filename);
     
     /**
-     * @brief 从文件恢复数据库
-     * @param filename 源文件名
-     * @return 恢复的数据库对象
-     * @throws std::runtime_error 如果导入失败
+      * @brief Restore database from file
+ * @param filename Source filename
+ * @return Restored database object
+ * @throws std::runtime_error If import fails
      */
     static Database importDatabase(const std::string& filename);
     
     /**
-     * @brief 导出单个表到字符串（JSON格式）
+     * @brief Export single table to string (JSON format)
      * @param table 要导出的表
      * @param tableName 表名
      * @return JSON格式的字符串

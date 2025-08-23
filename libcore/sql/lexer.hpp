@@ -9,7 +9,7 @@
 
 namespace tinydb::sql {
 
-// 词法分析异常
+// Lexical analysis exception
 class LexerError : public std::runtime_error {
 private:
     size_t position_;
@@ -30,38 +30,38 @@ public:
     }
 };
 
-// 词法分析器类
+// Lexical analyzer class
 class Lexer {
 private:
-    std::string source_;        // 源SQL文本
-    size_t current_;           // 当前字符位置
-    size_t line_;              // 当前行号
-    size_t column_;            // 当前列号
-    std::vector<Token> tokens_; // 已解析的Token列表
+    std::string source_;        // Source SQL text
+    size_t current_;           // Current character position
+    size_t line_;              // Current line number
+    size_t column_;            // Current column number
+    std::vector<Token> tokens_; // Parsed token list
 
 public:
-    // 构造函数
+    // Constructors
     explicit Lexer(std::string source) 
         : source_(std::move(source)), current_(0), line_(1), column_(1) {}
     
-    // 禁用拷贝，启用移动
+    // Disable copy, enable move
     Lexer(const Lexer&) = delete;
     Lexer& operator=(const Lexer&) = delete;
     Lexer(Lexer&&) = default;
     Lexer& operator=(Lexer&&) = default;
     
-    // 主要接口
+    // Main interface
     std::vector<Token> tokenize();
-    std::vector<Token> tokenizeWithWhitespace(); // 包含空白符的版本
+    std::vector<Token> tokenizeWithWhitespace(); // Version including whitespace
     
-    // 获取结果
+    // Get results
     const std::vector<Token>& getTokens() const { return tokens_; }
     
-    // 调试输出
+    // Debug output
     void printTokens() const;
     std::string tokensToString() const;
     
-    // 静态便利方法
+    // Static convenience methods
     static std::vector<Token> tokenize(const std::string& source) {
         Lexer lexer(source);
         return lexer.tokenize();
@@ -73,57 +73,57 @@ public:
     }
 
 private:
-    // 内部解析方法
+    // Internal parsing methods
     void scanTokens(bool includeWhitespace = false);
     void scanToken(bool includeWhitespace = false);
     
-    // 字符处理
+    // Character processing
     char advance();
     char peek() const;
     char peekNext() const;
     bool match(char expected);
     bool isAtEnd() const;
     
-    // Token创建
+    // Token creation
     void addToken(TokenType type);
     void addToken(TokenType type, const std::string& value);
     void addToken(TokenType type, int value);
     
-    // 专用扫描方法
+    // Specialized scanning methods
     void scanString();
     void scanNumber();
     void scanIdentifier();
     void scanWhitespace();
     
-    // 操作符处理
+    // Operator processing
     void scanOperator();
     
-    // 错误处理
+    // Error handling
     void error(const std::string& message);
     
-    // 位置管理
+    // Position management
     void updatePosition(char c);
     size_t getCurrentPosition() const { return current_; }
     size_t getCurrentLine() const { return line_; }
     size_t getCurrentColumn() const { return column_; }
 };
 
-// 词法分析工具类
+// Lexical analysis utility class
 class LexerUtils {
 public:
-    // 验证Token序列
+    // Validate token sequence
     static bool validateTokenSequence(const std::vector<Token>& tokens);
     
-    // 过滤空白符
+    // Filter whitespace
     static std::vector<Token> filterWhitespace(const std::vector<Token>& tokens);
     
-    // 查找特定类型的Token
+    // Find specific type tokens
     static std::vector<size_t> findTokensOfType(const std::vector<Token>& tokens, TokenType type);
     
-    // Token序列格式化输出
+    // Token sequence formatted output
     static std::string formatTokens(const std::vector<Token>& tokens, bool verbose = false);
     
-    // 检查Token序列是否包含语法错误
+    // Check if token sequence contains syntax errors
     static bool hasBasicSyntaxErrors(const std::vector<Token>& tokens);
 };
 

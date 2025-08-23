@@ -8,7 +8,7 @@
 
 namespace tinydb::sql {
 
-// 解析器异常
+// Parser exception
 class ParseError : public std::runtime_error {
 private:
     size_t position_;
@@ -28,13 +28,13 @@ public:
     const std::string& getActual() const { return actual_; }
 };
 
-// SQL解析器
+// SQL parser
 class Parser {
 private:
     std::vector<Token> tokens_;
     size_t current_;
     
-    // 辅助方法
+    // Helper methods
     bool isAtEnd() const;
     const Token& peek() const;
     const Token& previous() const;
@@ -44,7 +44,7 @@ private:
     bool match(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& message);
     
-    // 解析方法
+    // Parsing methods
     std::unique_ptr<Statement> parseStatement();
     std::unique_ptr<CreateTableStatement> parseCreateTable();
     std::unique_ptr<InsertStatement> parseInsert();
@@ -52,35 +52,35 @@ private:
     std::unique_ptr<UpdateStatement> parseUpdate();
     std::unique_ptr<DeleteStatement> parseDelete();
     
-    // 表达式解析
+    // Expression parsing
     ExpressionPtr parseExpression();
     ExpressionPtr parseLiteral();
     ExpressionPtr parseColumn();
     
-    // JOIN解析
+    // JOIN parsing
     std::vector<std::unique_ptr<JoinClause>> parseJoins();
     std::unique_ptr<JoinClause> parseJoin();
     
-    // 条件解析 - 支持逻辑运算符和括号
+    // Condition parsing - supports logical operators and parentheses
     std::unique_ptr<tinydb::Condition> parseCondition();
     std::unique_ptr<tinydb::Condition> parseLogicalOr();
     std::unique_ptr<tinydb::Condition> parseLogicalAnd();
     std::unique_ptr<tinydb::Condition> parsePrimaryCondition();
     std::unique_ptr<tinydb::Condition> parseComparisonCondition();
     
-    // 数据类型解析
+    // Data type parsing
     tinydb::DataType parseDataType();
     
-    // 错误处理
+    // Error handling
     void synchronize();
 
 public:
     explicit Parser(std::vector<Token> tokens);
     
-    // 解析单个SQL语句
+    // Parse single SQL statement
     std::unique_ptr<Statement> parse();
     
-    // 解析多个SQL语句
+    // Parse multiple SQL statements
     std::vector<std::unique_ptr<Statement>> parseMultiple();
 };
 

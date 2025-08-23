@@ -6,14 +6,14 @@
 
 namespace tinydb::sql {
 
-// Lexer 主要方法实现
+// Lexer main method implementations
 std::vector<Token> Lexer::tokenize() {
     tokens_.clear();
     current_ = 0;
     line_ = 1;
     column_ = 1;
     
-    scanTokens(false); // 不包含空白符
+    scanTokens(false); // Exclude whitespace
     return tokens_;
 }
 
@@ -23,7 +23,7 @@ std::vector<Token> Lexer::tokenizeWithWhitespace() {
     line_ = 1;
     column_ = 1;
     
-    scanTokens(true); // 包含空白符
+    scanTokens(true); // Include whitespace
     return tokens_;
 }
 
@@ -32,7 +32,7 @@ void Lexer::scanTokens(bool includeWhitespace) {
         scanToken(includeWhitespace);
     }
     
-    // 添加EOF标记
+    // Add EOF token
     addToken(TokenType::END_OF_FILE);
 }
 
@@ -40,7 +40,7 @@ void Lexer::scanToken(bool includeWhitespace) {
     char c = advance();
     
     switch (c) {
-        // 单字符Token
+        // Single character tokens
         case '(':
             addToken(TokenType::LEFT_PAREN);
             break;
@@ -63,10 +63,10 @@ void Lexer::scanToken(bool includeWhitespace) {
             addToken(TokenType::DOT);
             break;
             
-        // SQL注释处理
+        // SQL comment handling
         case '-':
             if (match('-')) {
-                // SQL注释 "--"，跳过到行尾
+                // SQL comment "--", skip to end of line
                 while (peek() != '\n' && !isAtEnd()) {
                     advance();
                 }
@@ -75,7 +75,7 @@ void Lexer::scanToken(bool includeWhitespace) {
             }
             break;
             
-        // 可能的双字符操作符
+        // Possible two-character operators
         case '=':
             addToken(TokenType::EQUAL);
             break;
@@ -101,33 +101,33 @@ void Lexer::scanToken(bool includeWhitespace) {
             }
             break;
             
-        // 字符串字面量
+        // String literals
         case '\'':
         case '"':
-            current_--; // 回退，让scanString处理
+            current_--; // Backtrack, let scanString handle it
             scanString();
             break;
             
-        // 空白符
+        // Whitespace
         case ' ':
         case '\r':
         case '\t':
         case '\n':
-            current_--; // 回退，让scanWhitespace处理
+            current_--; // Backtrack, let scanWhitespace handle it
             if (includeWhitespace) {
                 scanWhitespace();
             } else {
-                // 跳过空白符，但要更新位置
+                // Skip whitespace, but update position
                 advance();
             }
             break;
             
         default:
             if (TokenUtils::isDigit(c)) {
-                current_--; // 回退，让scanNumber处理
+                current_--; // Backtrack, let scanNumber handle it
                 scanNumber();
             } else if (TokenUtils::isIdentifierStart(c)) {
-                current_--; // 回退，让scanIdentifier处理
+                current_--; // Backtrack, let scanIdentifier handle it
                 scanIdentifier();
             } else {
                 error("Unexpected character: '" + std::string(1, c) + "'");
@@ -188,13 +188,13 @@ void Lexer::addToken(TokenType type, int value) {
 }
 
 void Lexer::scanString() {
-    char quote = advance(); // 获取引号类型
+    char quote = advance(); // Get quote type
     std::string value;
     
     while (!isAtEnd() && peek() != quote) {
         char c = advance();
         if (c == '\\' && !isAtEnd()) {
-            // 处理转义字符
+            // Handle escape characters
             char escaped = advance();
             switch (escaped) {
                 case 'n': value += '\n'; break;
@@ -204,7 +204,7 @@ void Lexer::scanString() {
                 case '\'': value += '\''; break;
                 case '"': value += '"'; break;
                 default:
-                    value += escaped; // 其他字符直接添加
+                    value += escaped; // Add other characters directly
                     break;
             }
         } else {
@@ -216,7 +216,7 @@ void Lexer::scanString() {
         error("Unterminated string literal");
     }
     
-    // 消费结束引号
+    // Consume closing quote
     advance();
     
     addToken(TokenType::STRING_LITERAL, value);
@@ -225,12 +225,12 @@ void Lexer::scanString() {
 void Lexer::scanNumber() {
     std::string value;
     
-    // 扫描数字字符
+    // Scan digit characters
     while (!isAtEnd() && TokenUtils::isDigit(peek())) {
         value += advance();
     }
     
-    // 转换为整数
+    // Convert to integer
     try {
         int intValue = std::stoi(value);
         addToken(TokenType::INTEGER, intValue);
@@ -242,23 +242,23 @@ void Lexer::scanNumber() {
 void Lexer::scanIdentifier() {
     std::string value;
     
-    // 第一个字符必须是字母或下划线
+    // First character must be letter or underscore
     if (!TokenUtils::isIdentifierStart(peek())) {
         error("Invalid identifier start");
     }
     
-    // 扫描标识符字符
+    // Scan identifier characters
     while (!isAtEnd() && TokenUtils::isIdentifierChar(peek())) {
         value += advance();
     }
     
-    // 检查是否为关键字
+    // Check if it's a keyword
     TokenType type = TokenUtils::stringToTokenType(value);
     
     if (type == TokenType::IDENTIFIER) {
         addToken(TokenType::IDENTIFIER, value);
     } else {
-        addToken(type); // 关键字
+        addToken(type); // Keyword
     }
 }
 
@@ -298,27 +298,27 @@ std::string Lexer::tokensToString() const {
     return oss.str();
 }
 
-// LexerUtils 实现
+// LexerUtils implementation
 bool LexerUtils::validateTokenSequence(const std::vector<Token>& tokens) {
     if (tokens.empty()) return false;
     
-    // 基本验证：最后一个应该是EOF
+    // Basic validation: last should be EOF
     if (tokens.back().type != TokenType::END_OF_FILE) {
         return false;
     }
     
-    // 检查括号匹配
+    // Check parentheses matching
     int parenCount = 0;
     for (const auto& token : tokens) {
         if (token.type == TokenType::LEFT_PAREN) {
             parenCount++;
         } else if (token.type == TokenType::RIGHT_PAREN) {
             parenCount--;
-            if (parenCount < 0) return false; // 右括号多于左括号
+            if (parenCount < 0) return false; // More right parentheses than left
         }
     }
     
-    return parenCount == 0; // 括号必须匹配
+    return parenCount == 0; // Parentheses must match
 }
 
 std::vector<Token> LexerUtils::filterWhitespace(const std::vector<Token>& tokens) {
@@ -365,17 +365,17 @@ std::string LexerUtils::formatTokens(const std::vector<Token>& tokens, bool verb
 }
 
 bool LexerUtils::hasBasicSyntaxErrors(const std::vector<Token>& tokens) {
-    // 基本语法检查
+    // Basic syntax check
     if (tokens.empty()) return true;
     
-    // 检查是否有未知Token
+    // Check for unknown tokens
     for (const auto& token : tokens) {
         if (token.type == TokenType::UNKNOWN) {
             return true;
         }
     }
     
-    // 检查括号匹配
+    // Check parentheses matching
     if (!validateTokenSequence(tokens)) {
         return true;
     }

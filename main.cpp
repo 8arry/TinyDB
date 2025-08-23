@@ -19,20 +19,20 @@
 
 using namespace tinydb;
 
-// ASCII表格输出格式
+// ASCII table output formatter
 class TableFormatter {
 public:
     static void printTable(const std::vector<std::string>& columnNames, 
                           const std::vector<tinydb::Row>& rows) {
         if (columnNames.empty()) return;
         
-        // 计算每列的最大宽度
+        // Calculate maximum width for each column
         std::vector<size_t> columnWidths(columnNames.size());
         for (size_t i = 0; i < columnNames.size(); ++i) {
             columnWidths[i] = columnNames[i].length();
         }
         
-        // 检查数据行的宽度
+        // Check width of data rows
         for (const auto& row : rows) {
             for (size_t i = 0; i < std::min(row.size(), columnWidths.size()); ++i) {
                 std::string cellValue = row[i].toString();
@@ -40,7 +40,7 @@ public:
             }
         }
         
-        // 打印表格
+        // Print table
         printSeparator(columnWidths);
         printRow(columnNames, columnWidths);
         printSeparator(columnWidths);
@@ -75,7 +75,7 @@ private:
     }
 };
 
-// SQL执行器
+// SQL Executor
 class SQLExecutor {
 private:
     tinydb::Database db_;
@@ -83,22 +83,22 @@ private:
 public:
     void execute(const std::string& sql) {
         try {
-            // 简单的SQL解析和执行
+            // Simple SQL parsing and execution
             if (sql.empty() || sql.find_first_not_of(" \t\n\r") == std::string::npos) {
-                return; // 跳过空行
+                return; // Skip empty lines
             }
             
 
             
-            // 词法分析
+            // Lexical analysis
             sql::Lexer lexer(sql);
             auto tokens = lexer.tokenize();
             
-            // 语法分析
+            // Syntax analysis
             sql::Parser parser(std::move(tokens));
             auto statement = parser.parse();
             
-            // 执行语句（如果存在）
+            // Execute statement (if exists)
             if (statement) {
                 executeStatement(statement.get());
             }
@@ -135,7 +135,7 @@ private:
     
     void executeCreateTable(sql::CreateTableStatement* stmt) {
         db_.createTable(stmt->getTableName(), stmt->getColumns());
-        // CREATE TABLE 不输出内容，静默成功
+        // CREATE TABLE has no output, silent success
     }
     
     void executeInsert(sql::InsertStatement* stmt) {
@@ -149,7 +149,7 @@ private:
             db_.insertInto(stmt->getTableName(), values);
         } else {
             // INSERT INTO table (col1, col2) VALUES (...)
-            // 这里需要按列名顺序重排值，简化版本先不实现
+            // Need to reorder values by column names, simplified version not implemented
             db_.insertInto(stmt->getTableName(), values);
         }
     }
@@ -163,13 +163,13 @@ private:
     }
     
     void executeSelectSimple(sql::SelectStatement* stmt) {
-        // 简单SELECT（无JOIN）
+        // Simple SELECT (no JOIN)
         std::function<bool(const tinydb::Row&, const tinydb::Table&)> condition = nullptr;
         if (stmt->getWhereCondition()) {
             condition = tinydb::ConditionAdapter::toLambda(*stmt->getWhereCondition());
         }
         
-        // 确定要选择的列
+        // Determine columns to select
         std::vector<std::string> selectColumns;
         std::vector<std::string> displayColumnNames;
         
@@ -182,15 +182,15 @@ private:
                 displayColumnNames.push_back(col.name);
             }
         } else {
-            // SELECT col1, col2 - 需要处理限定列名
+            // SELECT col1, col2 - need to handle qualified column names
             selectColumns = stmt->getColumns();
             displayColumnNames = stmt->getColumns();
             
-            // 处理限定列名：将 "table.column" 转换为 "column"
+            // Handle qualified column names: convert "table.column" to "column"
             for (auto& colName : selectColumns) {
                 size_t dotPos = colName.find('.');
                 if (dotPos != std::string::npos) {
-                    colName = colName.substr(dotPos + 1); // 只保留列名部分
+                    colName = colName.substr(dotPos + 1); // Keep only column name part
                 }
             }
         }
@@ -199,34 +199,34 @@ private:
             db_.selectFrom(stmt->getTableName(), selectColumns, condition) :
             db_.selectFrom(stmt->getTableName(), selectColumns);
         
-        // 打印ASCII表格
+        // Print ASCII table
         TableFormatter::printTable(displayColumnNames, rows);
     }
     
     void executeSelectWithJoin(sql::SelectStatement* stmt) {
-        // JOIN查询实现
+        // JOIN query implementation
         auto& mainTable = db_.getTable(stmt->getTableName());
         auto mainRows = db_.selectFrom(stmt->getTableName(), {"*"});
         
-        // 构建结果行
+        // Build result rows
         std::vector<tinydb::Row> resultRows;
         
-        // 对每个主表行进行JOIN处理
+        // Process JOIN for each main table row
         for (const auto& mainRow : mainRows) {
             executeJoinForRow(stmt, mainTable, mainRow, resultRows);
         }
         
-        // 应用WHERE条件
+        // Apply WHERE conditions
         if (stmt->getWhereCondition()) {
             auto condition = tinydb::ConditionAdapter::toLambda(*stmt->getWhereCondition());
             auto filteredRows = std::vector<tinydb::Row>();
             for (const auto& row : resultRows) {
-                // 为JOIN结果创建一个临时表来评估条件
-                // 合并所有相关表的schema
+                // Create temporary table for JOIN result to evaluate conditions
+                // Merge schemas of all related tables
                 auto allColumnNames = buildJoinColumnNames(stmt);
                 std::vector<tinydb::Column> combinedSchema;
                 
-                // 构建组合schema（简化：都设为int类型，因为这里只是为了列名查找）
+                // Build combined schema (simplified: set all as int type, only for column name lookup)
                 for (const auto& colName : allColumnNames) {
                     size_t dotPos = colName.find('.');
                     std::string actualColName = (dotPos != std::string::npos) ? 
@@ -242,7 +242,7 @@ private:
             resultRows = std::move(filteredRows);
         }
         
-        // 构建列名和选择列
+        // Build column names and selected columns
         std::vector<std::string> allColumnNames = buildJoinColumnNames(stmt);
         std::vector<std::string> selectedColumns;
         
@@ -254,30 +254,30 @@ private:
             selectedColumns = stmt->getColumns();
         }
         
-        // 提取选定的列
+        // Extract selected columns
         std::vector<tinydb::Row> finalRows = extractSelectedColumns(resultRows, allColumnNames, selectedColumns);
         
-        // 打印结果
+        // Print results
         TableFormatter::printTable(selectedColumns, finalRows);
     }
     
     void executeJoinForRow(sql::SelectStatement* stmt, const tinydb::Table& mainTable, 
                           const tinydb::Row& mainRow, std::vector<tinydb::Row>& resultRows) {
-        // 递归处理JOIN链
+        // Recursively process JOIN chain
         if (stmt->getJoins().empty()) {
             resultRows.push_back(mainRow);
             return;
         }
         
-        // 处理第一个JOIN（简化：只支持单个JOIN）
+        // Process first JOIN (simplified: only support single JOIN)
         const auto& joinClause = stmt->getJoins()[0];
         auto& joinTable = db_.getTable(joinClause->getTableName());
         auto joinRows = db_.selectFrom(joinClause->getTableName(), {"*"});
         
-        // 对每个JOIN表的行进行匹配
+        // Match rows for each JOIN table
         for (const auto& joinRow : joinRows) {
             if (evaluateJoinCondition(*joinClause->getOnCondition(), mainTable, mainRow, joinTable, joinRow)) {
-                // 合并行
+                // Merge rows
                 auto combinedRow = combineRows(mainTable, mainRow, joinTable, joinRow);
                 resultRows.push_back(combinedRow);
             }
@@ -287,21 +287,21 @@ private:
     bool evaluateJoinCondition(const tinydb::Condition& condition, 
                               const tinydb::Table& leftTable, const tinydb::Row& leftRow,
                               const tinydb::Table& rightTable, const tinydb::Row& rightRow) {
-        // 创建一个组合行来评估条件
+        // Create combined row to evaluate condition
         auto combinedRow = combineRows(leftTable, leftRow, rightTable, rightRow);
         
-        // 使用ConditionAdapter评估条件
+        // Use ConditionAdapter to evaluate condition
         auto lambda = tinydb::ConditionAdapter::toLambda(condition);
-        // 合并两个表的schema来创建临时表schema
+        // Merge schemas of two tables to create temporary table schema
         auto leftSchema = leftTable.getSchema();
         auto rightSchema = rightTable.getSchema();
         std::vector<tinydb::Column> combinedSchema;
         
-        // 添加左表列
+        // Add left table columns
         for (const auto& col : leftSchema) {
             combinedSchema.push_back(col);
         }
-        // 添加右表列
+        // Add right table columns
         for (const auto& col : rightSchema) {
             combinedSchema.push_back(col);
         }
@@ -314,12 +314,12 @@ private:
                            const tinydb::Table& /* rightTable */, const tinydb::Row& rightRow) {
         std::vector<tinydb::Value> combinedValues;
         
-        // 添加左表的所有列
+        // Add all columns from left table
         for (const auto& value : leftRow.getValues()) {
             combinedValues.push_back(value);
         }
         
-        // 添加右表的所有列
+        // Add all columns from right table
         for (const auto& value : rightRow.getValues()) {
             combinedValues.push_back(value);
         }
@@ -330,14 +330,14 @@ private:
     std::vector<std::string> buildJoinColumnNames(sql::SelectStatement* stmt) {
         std::vector<std::string> columnNames;
         
-        // 添加主表列名
+        // Add main table column names
         auto& mainTable = db_.getTable(stmt->getTableName());
         auto mainSchema = mainTable.getSchema();
         for (const auto& col : mainSchema) {
             columnNames.push_back(stmt->getTableName() + "." + col.name);
         }
         
-        // 添加JOIN表列名
+        // Add JOIN table column names
         for (const auto& joinClause : stmt->getJoins()) {
             auto& joinTable = db_.getTable(joinClause->getTableName());
             auto joinSchema = joinTable.getSchema();
@@ -356,12 +356,12 @@ private:
             return rows;
         }
         
-        // 如果没有找到任何匹配的列，返回空结果
+        // If no matching columns found, return empty result
         if (allColumnNames.empty()) {
             return {};
         }
         
-        // 找到选中列的索引
+        // Find indices of selected columns
         std::vector<size_t> selectedIndices;
         for (const auto& selectedCol : selectedColumns) {
             auto it = std::find(allColumnNames.begin(), allColumnNames.end(), selectedCol);
@@ -370,12 +370,12 @@ private:
             }
         }
         
-        // 如果没有找到任何匹配的列，返回空行而不是空结果
+        // If no matching columns found, return empty row instead of empty result
         if (selectedIndices.empty()) {
             return {};
         }
         
-        // 提取选中的列
+        // Extract selected columns
         std::vector<tinydb::Row> result;
         for (const auto& row : rows) {
             std::vector<tinydb::Value> selectedValues;
@@ -387,7 +387,7 @@ private:
                 }
             }
             
-            // 只有当有有效值时才添加行
+            // Only add row when there are valid values
             if (!selectedValues.empty()) {
                 result.emplace_back(selectedValues);
             }
@@ -397,13 +397,13 @@ private:
     }
     
     void executeUpdate(sql::UpdateStatement* stmt) {
-        // 构建更新映射
+        // Build update mapping
         std::unordered_map<std::string, tinydb::Value> updates;
         for (const auto& assignment : stmt->getAssignments()) {
             updates[assignment.first] = assignment.second->evaluate();
         }
         
-        // 构建WHERE条件
+        // Build WHERE condition
         std::function<bool(const tinydb::Row&, const tinydb::Table&)> condition = nullptr;
         if (stmt->getWhereCondition()) {
             condition = tinydb::ConditionAdapter::toLambda(*stmt->getWhereCondition());
@@ -413,7 +413,7 @@ private:
     }
     
     void executeDelete(sql::DeleteStatement* stmt) {
-        // 构建WHERE条件
+        // Build WHERE condition
         std::function<bool(const tinydb::Row&, const tinydb::Table&)> condition = nullptr;
         if (stmt->getWhereCondition()) {
             condition = tinydb::ConditionAdapter::toLambda(*stmt->getWhereCondition());
@@ -423,7 +423,7 @@ private:
     }
     
 public:
-    // 持久化支持方法
+    // Persistence support methods
     const Database& getDatabase() const { return db_; }
     
     void replaceDatabase(Database&& newDb) {
@@ -432,24 +432,24 @@ public:
     }
 };
 
-// 处理特殊命令（导入导出等）
+// Handle special commands (import/export, etc.)
 bool handleSpecialCommand(const std::string& command, SQLExecutor& executor) {
-    // 去除前后空白
+    // Trim leading/trailing whitespace
     std::string trimmed = command;
     trimmed.erase(0, trimmed.find_first_not_of(" \t\n\r"));
     trimmed.erase(trimmed.find_last_not_of(" \t\n\r") + 1);
     
-    // 转换为小写进行比较
+    // Convert to lowercase for comparison
     std::string lowercaseCmd = trimmed;
     std::transform(lowercaseCmd.begin(), lowercaseCmd.end(), lowercaseCmd.begin(), ::tolower);
     
     try {
-        // EXPORT DATABASE命令
+        // EXPORT DATABASE command
         if (lowercaseCmd.substr(0, 15) == "export database") {
             size_t toPos = lowercaseCmd.find(" to ");
             if (toPos != std::string::npos) {
                 std::string filename = trimmed.substr(toPos + 4);
-                // 移除引号
+                // Remove quotes
                 if (filename.front() == '"' && filename.back() == '"') {
                     filename = filename.substr(1, filename.length() - 2);
                 }
@@ -459,12 +459,12 @@ bool handleSpecialCommand(const std::string& command, SQLExecutor& executor) {
             }
         }
         
-        // IMPORT DATABASE命令
+        // IMPORT DATABASE command
         else if (lowercaseCmd.substr(0, 15) == "import database") {
             size_t fromPos = lowercaseCmd.find(" from ");
             if (fromPos != std::string::npos) {
                 std::string filename = trimmed.substr(fromPos + 6);
-                // 移除引号
+                // Remove quotes
                 if (filename.front() == '"' && filename.back() == '"') {
                     filename = filename.substr(1, filename.length() - 2);
                 }
@@ -475,12 +475,12 @@ bool handleSpecialCommand(const std::string& command, SQLExecutor& executor) {
                     return true;
                 } catch (const std::exception& e) {
                     std::cout << "Import failed: " << e.what() << std::endl;
-                    return true; // 仍然处理了命令，只是失败了
+                    return true; // Command handled, but failed
                 }
             }
         }
         
-        // HELP命令
+        // HELP command
         else if (lowercaseCmd == "help" || lowercaseCmd == "\\h") {
             std::cout << "\n=== TinyDB Help ===" << std::endl;
             std::cout << "SQL Commands:" << std::endl;
@@ -509,7 +509,7 @@ bool handleSpecialCommand(const std::string& command, SQLExecutor& executor) {
             return true;
         }
         
-        // QUIT命令
+        // QUIT command
         else if (lowercaseCmd == "quit" || lowercaseCmd == "\\q" || lowercaseCmd == "exit") {
             std::cout << "Goodbye!" << std::endl;
             exit(0);
@@ -520,7 +520,7 @@ bool handleSpecialCommand(const std::string& command, SQLExecutor& executor) {
         return true;
     }
     
-    return false; // 不是特殊命令
+    return false; // Not a special command
 }
 
 int main() {
@@ -539,17 +539,17 @@ int main() {
     while (std::getline(std::cin, line)) {
         currentStatement += line + " ";
         
-        // 查找分号结束语句
+        // Find semicolon to end statement
         size_t semicolonPos = currentStatement.find(';');
         while (semicolonPos != std::string::npos) {
             std::string sql = currentStatement.substr(0, semicolonPos);
             
-            // 处理特殊命令或执行SQL语句
+            // Handle special command or execute SQL statement
             if (!handleSpecialCommand(sql, executor)) {
                 executor.execute(sql);
             }
             
-            // 移除已执行的部分
+            // Remove executed part
             currentStatement = currentStatement.substr(semicolonPos + 1);
             semicolonPos = currentStatement.find(';');
         }

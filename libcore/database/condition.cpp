@@ -4,7 +4,7 @@
 
 namespace tinydb {
 
-// ConditionValue 实现
+// ConditionValue implementation
 Value ConditionValue::evaluate(const Row& row, const Table& table) const {
     switch (type) {
         case Type::LITERAL:
@@ -13,13 +13,13 @@ Value ConditionValue::evaluate(const Row& row, const Table& table) const {
         case Type::COLUMN: {
             const auto& columnName = std::get<std::string>(data);
             
-            // 找到列索引
+            // Find column index
             const auto& schema = table.getSchema();
             size_t columnIndex = 0;
             bool found = false;
             
             for (size_t i = 0; i < schema.size(); ++i) {
-                // 处理限定列名：如果columnName包含"."，只比较列名部分
+                // Handle qualified column names: if columnName contains ".", only compare the column name part
                 std::string actualColumnName = columnName;
                 size_t dotPos = columnName.find('.');
                 if (dotPos != std::string::npos) {
@@ -49,12 +49,12 @@ Value ConditionValue::evaluate(const Row& row, const Table& table) const {
     }
 }
 
-// ComparisonCondition 实现
+// ComparisonCondition implementation
 bool ComparisonCondition::evaluate(const Row& row, const Table& table) const {
     Value leftVal = left.evaluate(row, table);
     Value rightVal = right.evaluate(row, table);
     
-    // 检查类型兼容性
+    // Check type compatibility
     if (leftVal.getType() != rightVal.getType()) {
         throw std::runtime_error("Cannot compare values of different types");
     }
@@ -86,17 +86,17 @@ bool ComparisonCondition::evaluate(const Row& row, const Table& table) const {
 std::string ComparisonCondition::toString() const {
     std::ostringstream oss;
     
-    // 左操作数
+    // Left operand
     if (left.isLiteral()) {
         oss << left.getLiteral().toString();
     } else {
         oss << left.getColumnName();
     }
     
-    // 操作符
+    // Operator
     oss << " " << comparisonOpToString(op) << " ";
     
-    // 右操作数
+    // Right operand
     if (right.isLiteral()) {
         oss << right.getLiteral().toString();
     } else {
@@ -110,7 +110,7 @@ std::unique_ptr<Condition> ComparisonCondition::clone() const {
     return std::make_unique<ComparisonCondition>(left, op, right);
 }
 
-// LogicalCondition 实现
+// LogicalCondition implementation
 bool LogicalCondition::evaluate(const Row& row, const Table& table) const {
     switch (op) {
         case LogicalOp::AND:
@@ -174,7 +174,7 @@ std::unique_ptr<Condition> LogicalCondition::clone() const {
     }
 }
 
-// 工具函数
+// Utility functions
 std::string comparisonOpToString(ComparisonOp op) {
     switch (op) {
         case ComparisonOp::EQUAL:         return "=";
