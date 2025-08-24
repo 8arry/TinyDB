@@ -1,8 +1,8 @@
 #include "table.hpp"
-#include <iostream>
-#include <iomanip>
-#include <sstream>
 #include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
 namespace tinydb {
 
@@ -29,18 +29,18 @@ size_t Table::findColumnIndex(const std::string& columnName) const {
 
 void Table::validateRow(const Row& row) const {
     if (row.size() != schema.size()) {
-        throw std::invalid_argument(
-            "Row has " + std::to_string(row.size()) + 
-            " values, but table has " + std::to_string(schema.size()) + " columns");
+        throw std::invalid_argument("Row has " + std::to_string(row.size()) +
+                                    " values, but table has " + std::to_string(schema.size()) +
+                                    " columns");
     }
 
     // Check type matching
     for (size_t i = 0; i < schema.size(); ++i) {
         if (row[i].getType() != schema[i].type) {
             throw std::invalid_argument(
-                "Type mismatch in column '" + schema[i].name + 
-                "': expected " + (schema[i].type == DataType::INT ? "int" : "string") +
-                ", got " + (row[i].getType() == DataType::INT ? "int" : "string"));
+                "Type mismatch in column '" + schema[i].name + "': expected " +
+                (schema[i].type == DataType::INT ? "int" : "string") + ", got " +
+                (row[i].getType() == DataType::INT ? "int" : "string"));
         }
     }
 }
@@ -76,11 +76,11 @@ bool Table::hasColumn(const std::string& name) const noexcept {
 std::vector<std::string> Table::getColumnNames() const {
     std::vector<std::string> names;
     names.reserve(schema.size());
-    
+
     for (const auto& column : schema) {
         names.push_back(column.name);
     }
-    
+
     return names;
 }
 
@@ -104,7 +104,7 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames) 
     // Validate columns exist
     std::vector<size_t> columnIndices;
     columnIndices.reserve(columnNames.size());
-    
+
     for (const auto& columnName : columnNames) {
         validateColumnExists(columnName);
         columnIndices.push_back(findColumnIndex(columnName));
@@ -117,22 +117,23 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames) 
     for (const auto& row : rows) {
         std::vector<Value> selectedValues;
         selectedValues.reserve(columnIndices.size());
-        
+
         for (size_t index : columnIndices) {
             selectedValues.push_back(row[index]);
         }
-        
+
         result.emplace_back(std::move(selectedValues));
     }
 
     return result;
 }
 
-std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames,
-                                  const std::function<bool(const Row&, const Table&)>& condition) const {
+std::vector<Row>
+Table::selectRows(const std::vector<std::string>& columnNames,
+                  const std::function<bool(const Row&, const Table&)>& condition) const {
     // Filter rows first, then project columns
     std::vector<Row> filteredRows;
-    
+
     for (const auto& row : rows) {
         if (condition(row, *this)) {
             filteredRows.push_back(row);
@@ -147,7 +148,7 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames,
     // Project specified columns
     std::vector<size_t> columnIndices;
     columnIndices.reserve(columnNames.size());
-    
+
     for (const auto& columnName : columnNames) {
         validateColumnExists(columnName);
         columnIndices.push_back(findColumnIndex(columnName));
@@ -159,11 +160,11 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames,
     for (const auto& row : filteredRows) {
         std::vector<Value> selectedValues;
         selectedValues.reserve(columnIndices.size());
-        
+
         for (size_t index : columnIndices) {
             selectedValues.push_back(row[index]);
         }
-        
+
         result.emplace_back(std::move(selectedValues));
     }
 
@@ -172,20 +173,20 @@ std::vector<Row> Table::selectRows(const std::vector<std::string>& columnNames,
 
 // Update operations
 size_t Table::updateRows(const std::function<bool(const Row&, const Table&)>& condition,
-                        const std::unordered_map<std::string, Value>& updates) {
+                         const std::unordered_map<std::string, Value>& updates) {
     size_t updatedCount = 0;
 
     // Validate that columns to update exist
     for (const auto& [columnName, value] : updates) {
         validateColumnExists(columnName);
-        
+
         // Validate type matching
         const auto& column = getColumn(columnName);
         if (value.getType() != column.type) {
-            throw std::invalid_argument(
-                "Type mismatch for column '" + columnName + 
-                "': expected " + (column.type == DataType::INT ? "int" : "string") +
-                ", got " + (value.getType() == DataType::INT ? "int" : "string"));
+            throw std::invalid_argument("Type mismatch for column '" + columnName + "': expected " +
+                                        (column.type == DataType::INT ? "int" : "string") +
+                                        ", got " +
+                                        (value.getType() == DataType::INT ? "int" : "string"));
         }
     }
 
@@ -206,14 +207,13 @@ size_t Table::updateRows(const std::function<bool(const Row&, const Table&)>& co
 // Delete operations
 size_t Table::deleteRows(const std::function<bool(const Row&, const Table&)>& condition) {
     size_t originalSize = rows.size();
-    
-    auto newEnd = std::remove_if(rows.begin(), rows.end(),
-        [&condition, this](const Row& row) {
-            return condition(row, *this);
-        });
-    
+
+    auto newEnd = std::remove_if(rows.begin(), rows.end(), [&condition, this](const Row& row) {
+        return condition(row, *this);
+    });
+
     rows.erase(newEnd, rows.end());
-    
+
     return originalSize - rows.size();
 }
 
@@ -237,7 +237,7 @@ const Value& Table::getValue(size_t rowIndex, const std::string& columnName) con
     if (rowIndex >= rows.size()) {
         throw std::out_of_range("Row index out of range");
     }
-    
+
     size_t columnIndex = findColumnIndex(columnName);
     return rows[rowIndex][columnIndex];
 }
@@ -246,7 +246,7 @@ Value& Table::getValue(size_t rowIndex, const std::string& columnName) {
     if (rowIndex >= rows.size()) {
         throw std::out_of_range("Row index out of range");
     }
-    
+
     size_t columnIndex = findColumnIndex(columnName);
     return rows[rowIndex][columnIndex];
 }
@@ -254,14 +254,14 @@ Value& Table::getValue(size_t rowIndex, const std::string& columnName) {
 // Column value retrieval
 std::vector<Value> Table::getColumnValues(const std::string& columnName) const {
     size_t columnIndex = findColumnIndex(columnName);
-    
+
     std::vector<Value> values;
     values.reserve(rows.size());
-    
+
     for (const auto& row : rows) {
         values.push_back(row[columnIndex]);
     }
-    
+
     return values;
 }
 
@@ -269,11 +269,11 @@ std::vector<Value> Table::getColumnValues(const std::string& columnName) const {
 void Table::printSchema() const {
     std::cout << "Table: " << tableName << "\n";
     std::cout << "Columns:\n";
-    
+
     for (size_t i = 0; i < schema.size(); ++i) {
         const auto& column = schema[i];
-        std::cout << "  " << i << ": " << column.name 
-                  << " (" << (column.type == DataType::INT ? "int" : "string") << ")\n";
+        std::cout << "  " << i << ": " << column.name << " ("
+                  << (column.type == DataType::INT ? "int" : "string") << ")\n";
     }
 }
 
@@ -286,9 +286,10 @@ void Table::printData() const {
     for (size_t i = 0; i < rows.size(); ++i) {
         std::cout << "Row " << i << ": ";
         const auto& row = rows[i];
-        
+
         for (size_t j = 0; j < row.size(); ++j) {
-            if (j > 0) std::cout << ", ";
+            if (j > 0)
+                std::cout << ", ";
             std::cout << row[j];
         }
         std::cout << "\n";
@@ -297,30 +298,33 @@ void Table::printData() const {
 
 void Table::printTable() const {
     std::cout << "\n=== Table: " << tableName << " ===\n";
-    
+
     // Print column headers
     for (size_t i = 0; i < schema.size(); ++i) {
-        if (i > 0) std::cout << " | ";
+        if (i > 0)
+            std::cout << " | ";
         std::cout << std::setw(12) << std::left << schema[i].name;
     }
     std::cout << "\n";
-    
+
     // Print separator line
     for (size_t i = 0; i < schema.size(); ++i) {
-        if (i > 0) std::cout << "-+-";
+        if (i > 0)
+            std::cout << "-+-";
         std::cout << std::string(12, '-');
     }
     std::cout << "\n";
-    
+
     // Print data
     for (const auto& row : rows) {
         for (size_t i = 0; i < row.size(); ++i) {
-            if (i > 0) std::cout << " | ";
+            if (i > 0)
+                std::cout << " | ";
             std::cout << std::setw(12) << std::left << row[i].toString();
         }
         std::cout << "\n";
     }
-    
+
     std::cout << "\nRows: " << rows.size() << "\n\n";
 }
 

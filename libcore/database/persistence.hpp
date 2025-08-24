@@ -37,78 +37,78 @@ public:
     
     /**
      * @brief Export single table to string (JSON format)
-     * @param table 要导出的表
-     * @param tableName 表名
-     * @return JSON格式的字符串
+     * @param table Table to export
+     * @param tableName Table name
+     * @return JSON string
      */
     static std::string exportTableToJson(const Table& table, const std::string& tableName);
     
     /**
-     * @brief 从JSON字符串导入表
-     * @param json JSON格式的字符串
-     * @param database 目标数据库
-     * @param tableName 表名
+     * @brief Import table from JSON string
+     * @param json JSON string
+     * @param database Target database
+     * @param tableName Table name
      */
     static void importTableFromJson(const std::string& json, Database& database, const std::string& tableName);
 
     /**
-     * @brief 将Value对象转换为JSON字符串 (公共方法，用于测试)
-     * @param value Value对象
-     * @return JSON格式的字符串
+     * @brief Convert Value object to JSON string (public method, for testing)
+     * @param value Value object
+     * @return JSON string
      */
     static std::string valueToJson(const Value& value);
     
     /**
-     * @brief 从JSON字符串解析Value对象 (公共方法，用于测试)
-     * @param json JSON字符串
-     * @param type 数据类型
-     * @return Value对象
+     * @brief Parse Value object from JSON string (public method, for testing)
+     * @param json JSON string
+     * @param type Data type
+     * @return Value object
      */
     static Value jsonToValue(const std::string& json, DataType type);
 
 private:
     
     /**
-     * @brief 转义JSON字符串
-     * @param str 原始字符串
-     * @return 转义后的字符串
+     * @brief Escape JSON string
+     * @param str Original string
+     * @return Escaped string
      */
     static std::string escapeJsonString(const std::string& str);
     
     /**
-     * @brief 反转义JSON字符串
-     * @param str 转义后的字符串
-     * @return 原始字符串
+     * @brief Unescape JSON string
+     * @param str Escaped string
+     * @return Original string
      */
     static std::string unescapeJsonString(const std::string& str);
     
     /**
-     * @brief 解析JSON对象中的字符串值
-     * @param json JSON字符串
-     * @param key 键名
-     * @return 字符串值
+     * @brief Parse string value from JSON object
+     * @param json JSON string
+     * @param key Key name
+     * @return String value
      */
     static std::string parseJsonString(const std::string& json, const std::string& key);
     
     /**
-     * @brief 解析JSON对象中的整数值
-     * @param json JSON字符串
-     * @param key 键名
-     * @return 整数值
+     * @brief Parse integer value from JSON object
+     * @param json JSON string
+     * @param key Key name
+     * @return Integer value
      */
     static int parseJsonInt(const std::string& json, const std::string& key);
     
     /**
-     * @brief 解析JSON数组
-     * @param json JSON字符串
-     * @param key 键名
-     * @return 数组内容字符串
+     * @brief Parse array content from JSON object
+     * @param json JSON string
+     * @param key Key name
+     * @return Array content string
      */
     static std::string parseJsonArray(const std::string& json, const std::string& key);
 };
 
 /**
- * @brief 持久化异常类
+ * @brief Persistence exception class
  */
 class PersistenceError : public std::runtime_error {
 public:

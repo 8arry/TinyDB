@@ -224,7 +224,7 @@ namespace Conditions {
         return ConditionValue::literal(value);
     }
     
-    // 比较操作符重载
+    // Comparison operator overloads
     inline std::unique_ptr<Condition> operator==(ConditionValue left, ConditionValue right) {
         return ConditionBuilder::equal(std::move(left), std::move(right));
     }
@@ -249,7 +249,7 @@ namespace Conditions {
         return ConditionBuilder::greaterEqual(std::move(left), std::move(right));
     }
     
-    // 逻辑操作符
+    // Logical operator overloads
     inline std::unique_ptr<Condition> operator&&(std::unique_ptr<Condition> left, std::unique_ptr<Condition> right) {
         return ConditionBuilder::and_(std::move(left), std::move(right));
     }
@@ -263,7 +263,7 @@ namespace Conditions {
     }
 }
 
-// 条件转换器 - 将Condition转换为lambda函数
+// Condition adapter - converts Condition to lambda function
 class ConditionAdapter {
 public:
     static std::function<bool(const Row&, const Table&)> toLambda(const Condition& condition) {
@@ -279,7 +279,7 @@ public:
     }
 };
 
-// 字符串转换工具
+// String conversion tools
 std::string comparisonOpToString(ComparisonOp op);
 std::string logicalOpToString(LogicalOp op);
 
