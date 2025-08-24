@@ -1,11 +1,11 @@
 #pragma once
 
 #include "table.hpp"
-#include <unordered_map>
 #include <memory>
-#include <string>
-#include <vector>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace tinydb {
 
@@ -22,7 +22,7 @@ private:
 public:
     // Constructors
     explicit Database(std::string name = "TinyDB");
-    
+
     // Disable copy, enable move
     Database(const Database&) = delete;
     Database& operator=(const Database&) = delete;
@@ -30,15 +30,21 @@ public:
     Database& operator=(Database&&) = default;
 
     // Basic information
-    const std::string& getName() const noexcept { return databaseName; }
-    size_t getTableCount() const noexcept { return tables.size(); }
-    bool empty() const noexcept { return tables.empty(); }
+    const std::string& getName() const noexcept {
+        return databaseName;
+    }
+    size_t getTableCount() const noexcept {
+        return tables.size();
+    }
+    bool empty() const noexcept {
+        return tables.empty();
+    }
 
     // Table management - creation
     void createTable(const std::string& tableName, std::vector<Column> schema);
-    
+
     // Convenience method for creating tables
-    template<typename... ColumnPairs>
+    template <typename... ColumnPairs>
     void createTable(const std::string& tableName, ColumnPairs&&... columnPairs) {
         std::vector<Column> schema;
         schema.reserve(sizeof...(columnPairs));
@@ -48,44 +54,46 @@ public:
 
     // Table management - deletion
     bool dropTable(const std::string& tableName);
-    void clear() noexcept { tables.clear(); }
+    void clear() noexcept {
+        tables.clear();
+    }
 
     // Table management - query
     bool hasTable(const std::string& tableName) const;
     const Table& getTable(const std::string& tableName) const;
     Table& getTable(const std::string& tableName);
-    
+
     // Get all table names
     std::vector<std::string> getTableNames() const;
 
     // Insert row data
     void insertInto(const std::string& tableName, std::vector<Value> values);
     void insertInto(const std::string& tableName, const Row& row);
-    
+
     // Convenience method for table operations - direct insertion of basic type values
-    template<typename... Values>
-    requires (sizeof...(Values) > 0) && (ValueType<Values> && ...)
+    template <typename... Values>
+        requires(sizeof...(Values) > 0) && (ValueType<Values> && ...)
     void insertInto(const std::string& tableName, Values&&... values) {
         auto& table = getTable(tableName);
         table.insertRow({Value{std::forward<Values>(values)}...});
     }
 
     // Query operations
-    std::vector<Row> selectFrom(const std::string& tableName, 
-                               const std::vector<std::string>& columns = {"*"}) const;
-    
     std::vector<Row> selectFrom(const std::string& tableName,
-                               const std::vector<std::string>& columns,
-                               const std::function<bool(const Row&, const Table&)>& condition) const;
+                                const std::vector<std::string>& columns = {"*"}) const;
+
+    std::vector<Row>
+    selectFrom(const std::string& tableName, const std::vector<std::string>& columns,
+               const std::function<bool(const Row&, const Table&)>& condition) const;
 
     // Update operations
     size_t updateTable(const std::string& tableName,
-                      const std::unordered_map<std::string, Value>& updates,
-                      const std::function<bool(const Row&, const Table&)>& condition);
+                       const std::unordered_map<std::string, Value>& updates,
+                       const std::function<bool(const Row&, const Table&)>& condition);
 
     // Delete operations
     size_t deleteFrom(const std::string& tableName,
-                     const std::function<bool(const Row&, const Table&)>& condition);
+                      const std::function<bool(const Row&, const Table&)>& condition);
 
     // Database statistics
     struct DatabaseStats {
@@ -94,20 +102,19 @@ public:
         size_t totalColumns;
         std::vector<std::pair<std::string, size_t>> tableRowCounts; // Table name and row count
     };
-    
+
     DatabaseStats getStats() const;
 
     // Database operations
     void truncateTable(const std::string& tableName); // Clear table data but preserve structure
-    
+
     // C++23 range support
 #if HAS_RANGES
     auto tablesView() const {
-        return tables | std::views::transform([](const auto& pair) -> const Table& {
-            return *pair.second;
-        });
+        return tables |
+               std::views::transform([](const auto& pair) -> const Table& { return *pair.second; });
     }
-    
+
     auto tableNamesView() const {
         return tables | std::views::keys;
     }
@@ -121,7 +128,7 @@ public:
         }
         return result;
     }
-    
+
     std::vector<std::string> tableNamesView() const {
         return getTableNames();
     }
@@ -133,7 +140,7 @@ public:
         std::vector<std::string> errors;
         std::vector<std::string> warnings;
     };
-    
+
     ValidationResult validate() const;
 
     // Debug and output
@@ -147,7 +154,7 @@ public:
         std::vector<std::pair<std::string, std::vector<Column>>> schemas;
         std::vector<std::pair<std::string, std::vector<Row>>> data;
     };
-    
+
     DatabaseSnapshot createSnapshot() const;
 
     // Utility functions
@@ -163,7 +170,8 @@ public:
         bool committed = false;
 
     public:
-        explicit Transaction(Database& database) : db(database) {}
+        explicit Transaction(Database& database) : db(database) {
+        }
         ~Transaction() {
             if (!committed) {
                 rollback();
@@ -196,20 +204,23 @@ public:
 // Database exception classes
 class DatabaseError : public std::runtime_error {
 public:
-    explicit DatabaseError(const std::string& message) 
-        : std::runtime_error("Database Error: " + message) {}
+    explicit DatabaseError(const std::string& message)
+        : std::runtime_error("Database Error: " + message) {
+    }
 };
 
 class TableNotFoundError : public DatabaseError {
 public:
     explicit TableNotFoundError(const std::string& tableName)
-        : DatabaseError("Table '" + tableName + "' not found") {}
+        : DatabaseError("Table '" + tableName + "' not found") {
+    }
 };
 
 class TableAlreadyExistsError : public DatabaseError {
 public:
     explicit TableAlreadyExistsError(const std::string& tableName)
-        : DatabaseError("Table '" + tableName + "' already exists") {}
+        : DatabaseError("Table '" + tableName + "' already exists") {
+    }
 };
 
 } // namespace tinydb

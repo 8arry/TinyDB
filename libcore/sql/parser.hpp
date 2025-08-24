@@ -1,10 +1,10 @@
 #pragma once
 
-#include "token.hpp"
 #include "ast.hpp"
-#include <vector>
+#include "token.hpp"
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 namespace tinydb::sql {
 
@@ -17,15 +17,23 @@ private:
 
 public:
     ParseError(const std::string& message, size_t position = 0)
-        : std::runtime_error(message), position_(position) {}
-    
+        : std::runtime_error(message), position_(position) {
+    }
+
     ParseError(const std::string& expected, const std::string& actual, size_t position)
-        : std::runtime_error("Expected '" + expected + "', but got '" + actual + "'")
-        , position_(position), expected_(expected), actual_(actual) {}
-    
-    size_t getPosition() const { return position_; }
-    const std::string& getExpected() const { return expected_; }
-    const std::string& getActual() const { return actual_; }
+        : std::runtime_error("Expected '" + expected + "', but got '" + actual + "'"),
+          position_(position), expected_(expected), actual_(actual) {
+    }
+
+    size_t getPosition() const {
+        return position_;
+    }
+    const std::string& getExpected() const {
+        return expected_;
+    }
+    const std::string& getActual() const {
+        return actual_;
+    }
 };
 
 // SQL parser
@@ -33,7 +41,7 @@ class Parser {
 private:
     std::vector<Token> tokens_;
     size_t current_;
-    
+
     // Helper methods
     bool isAtEnd() const;
     const Token& peek() const;
@@ -43,7 +51,7 @@ private:
     bool match(TokenType type);
     bool match(const std::vector<TokenType>& types);
     Token consume(TokenType type, const std::string& message);
-    
+
     // Parsing methods
     std::unique_ptr<Statement> parseStatement();
     std::unique_ptr<CreateTableStatement> parseCreateTable();
@@ -51,35 +59,35 @@ private:
     std::unique_ptr<SelectStatement> parseSelect();
     std::unique_ptr<UpdateStatement> parseUpdate();
     std::unique_ptr<DeleteStatement> parseDelete();
-    
+
     // Expression parsing
     ExpressionPtr parseExpression();
     ExpressionPtr parseLiteral();
     ExpressionPtr parseColumn();
-    
+
     // JOIN parsing
     std::vector<std::unique_ptr<JoinClause>> parseJoins();
     std::unique_ptr<JoinClause> parseJoin();
-    
+
     // Condition parsing - supports logical operators and parentheses
     std::unique_ptr<tinydb::Condition> parseCondition();
     std::unique_ptr<tinydb::Condition> parseLogicalOr();
     std::unique_ptr<tinydb::Condition> parseLogicalAnd();
     std::unique_ptr<tinydb::Condition> parsePrimaryCondition();
     std::unique_ptr<tinydb::Condition> parseComparisonCondition();
-    
+
     // Data type parsing
     tinydb::DataType parseDataType();
-    
+
     // Error handling
     void synchronize();
 
 public:
     explicit Parser(std::vector<Token> tokens);
-    
+
     // Parse single SQL statement
     std::unique_ptr<Statement> parse();
-    
+
     // Parse multiple SQL statements
     std::vector<std::unique_ptr<Statement>> parseMultiple();
 };

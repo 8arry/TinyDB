@@ -1,11 +1,11 @@
 #pragma once
 
 #include "value.hpp"
-#include <vector>
-#include <string>
-#include <unordered_map>
 #include <algorithm>
 #include <functional>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 // Conditional inclusion of C++23 ranges
 #if __cplusplus >= 202002L && __has_include(<ranges>)
@@ -28,11 +28,12 @@ private:
 public:
     // Constructors
     Row() = default;
-    explicit Row(std::vector<Value> vals) : values(std::move(vals)) {}
-    
+    explicit Row(std::vector<Value> vals) : values(std::move(vals)) {
+    }
+
     // C++23 range constructor
-    template<std::ranges::range R>
-    requires std::convertible_to<std::ranges::range_value_t<R>, Value>
+    template <std::ranges::range R>
+        requires std::convertible_to<std::ranges::range_value_t<R>, Value>
     explicit Row(R&& range) {
         values.reserve(std::ranges::size(range));
         for (auto&& val : range) {
@@ -56,12 +57,20 @@ public:
     }
 
     // Get value count
-    size_t size() const noexcept { return values.size(); }
-    bool empty() const noexcept { return values.empty(); }
+    size_t size() const noexcept {
+        return values.size();
+    }
+    bool empty() const noexcept {
+        return values.empty();
+    }
 
     // Get reference to all values (for iteration)
-    const std::vector<Value>& getValues() const noexcept { return values; }
-    std::vector<Value>& getValues() noexcept { return values; }
+    const std::vector<Value>& getValues() const noexcept {
+        return values;
+    }
+    std::vector<Value>& getValues() noexcept {
+        return values;
+    }
 
     // Add value
     void addValue(Value value) {
@@ -80,12 +89,24 @@ public:
     auto operator<=>(const Row& other) const = default;
 
     // Iterator support
-    auto begin() { return values.begin(); }
-    auto end() { return values.end(); }
-    auto begin() const { return values.begin(); }
-    auto end() const { return values.end(); }
-    auto cbegin() const { return values.cbegin(); }
-    auto cend() const { return values.cend(); }
+    auto begin() {
+        return values.begin();
+    }
+    auto end() {
+        return values.end();
+    }
+    auto begin() const {
+        return values.begin();
+    }
+    auto end() const {
+        return values.end();
+    }
+    auto cbegin() const {
+        return values.cbegin();
+    }
+    auto cend() const {
+        return values.cend();
+    }
 };
 
 // Table class - manages table schema and data
@@ -103,7 +124,7 @@ private:
 public:
     // Constructors
     explicit Table(std::string name, std::vector<Column> columns);
-    
+
     // Disable copy, enable move
     Table(const Table&) = delete;
     Table& operator=(const Table&) = delete;
@@ -111,11 +132,21 @@ public:
     Table& operator=(Table&&) = default;
 
     // Basic information
-    const std::string& getName() const noexcept { return tableName; }
-    const std::vector<Column>& getSchema() const noexcept { return schema; }
-    size_t getColumnCount() const noexcept { return schema.size(); }
-    size_t getRowCount() const noexcept { return rows.size(); }
-    bool empty() const noexcept { return rows.empty(); }
+    const std::string& getName() const noexcept {
+        return tableName;
+    }
+    const std::vector<Column>& getSchema() const noexcept {
+        return schema;
+    }
+    size_t getColumnCount() const noexcept {
+        return schema.size();
+    }
+    size_t getRowCount() const noexcept {
+        return rows.size();
+    }
+    bool empty() const noexcept {
+        return rows.empty();
+    }
 
     // Column information
     const Column& getColumn(size_t index) const;
@@ -126,27 +157,32 @@ public:
     // Data operations - insertion
     void insertRow(Row row);
     void insertRow(std::vector<Value> values);
-    
+
     // C++23 range insertion
-    template<std::ranges::range R>
-    requires std::convertible_to<std::ranges::range_value_t<R>, Value>
+    template <std::ranges::range R>
+        requires std::convertible_to<std::ranges::range_value_t<R>, Value>
     void insertRow(R&& values) {
         insertRow(Row{std::forward<R>(values)});
     }
 
     // Data operations - query
-    const std::vector<Row>& getAllRows() const noexcept { return rows; }
+    const std::vector<Row>& getAllRows() const noexcept {
+        return rows;
+    }
     std::vector<Row> selectRows(const std::vector<std::string>& columnNames) const;
-    std::vector<Row> selectRows(const std::vector<std::string>& columnNames, 
-                               const std::function<bool(const Row&, const Table&)>& condition) const;
+    std::vector<Row>
+    selectRows(const std::vector<std::string>& columnNames,
+               const std::function<bool(const Row&, const Table&)>& condition) const;
 
     // Data operations - update
     size_t updateRows(const std::function<bool(const Row&, const Table&)>& condition,
-                     const std::unordered_map<std::string, Value>& updates);
+                      const std::unordered_map<std::string, Value>& updates);
 
     // Data operations - deletion
     size_t deleteRows(const std::function<bool(const Row&, const Table&)>& condition);
-    void clear() noexcept { rows.clear(); }
+    void clear() noexcept {
+        rows.clear();
+    }
 
     // Row access
     const Row& getRow(size_t index) const;
@@ -158,24 +194,29 @@ public:
 
 #if HAS_RANGES
     // C++23 range and view support
-    auto rowsView() const { return std::views::all(rows); }
-    auto rowsView() { return std::views::all(rows); }
+    auto rowsView() const {
+        return std::views::all(rows);
+    }
+    auto rowsView() {
+        return std::views::all(rows);
+    }
 
     // Filtered rows view
-    template<typename Predicate>
-    auto filteredRowsView(Predicate&& pred) const {
-        return rows | std::views::filter([&pred, this](const Row& row) {
-            return pred(row, *this);
-        });
+    template <typename Predicate> auto filteredRowsView(Predicate&& pred) const {
+        return rows |
+               std::views::filter([&pred, this](const Row& row) { return pred(row, *this); });
     }
 #else
     // Fallback implementation
-    const std::vector<Row>& rowsView() const { return rows; }
-    std::vector<Row>& rowsView() { return rows; }
+    const std::vector<Row>& rowsView() const {
+        return rows;
+    }
+    std::vector<Row>& rowsView() {
+        return rows;
+    }
 
     // Fallback implementation for filtered rows
-    template<typename Predicate>
-    std::vector<Row> filteredRowsView(Predicate&& pred) const {
+    template <typename Predicate> std::vector<Row> filteredRowsView(Predicate&& pred) const {
         std::vector<Row> result;
         for (const auto& row : rows) {
             if (pred(row, *this)) {

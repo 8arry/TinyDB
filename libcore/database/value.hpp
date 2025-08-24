@@ -1,13 +1,13 @@
 #pragma once
 
-#include <variant>
-#include <string>
-#include <stdexcept>
-#include <iostream>
-#include <concepts>
-#include <utility>
-#include <functional>
 #include <compare>
+#include <concepts>
+#include <functional>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <variant>
 
 // Conditional inclusion of C++23 features
 #if __cplusplus >= 202302L && __has_include(<format>)
@@ -29,18 +29,18 @@ namespace tinydb {
 
 // Supported data types (meets project requirements: int and str)
 enum class DataType : std::uint8_t {
-    INT,    // int - integer type
-    STR     // str - string type
+    INT, // int - integer type
+    STR  // str - string type
 };
 
 // C++23 concept for value types
-template<typename T>
-concept ValueType = std::same_as<std::remove_cvref_t<T>, int> || 
-                   std::same_as<std::remove_cvref_t<T>, std::string> || 
-                   std::same_as<std::remove_cvref_t<T>, const char*> ||
-                   std::same_as<T, const char*> ||
-                   (std::is_array_v<std::remove_reference_t<T>> && 
-                    std::same_as<std::remove_extent_t<std::remove_reference_t<T>>, char>);
+template <typename T>
+concept ValueType =
+    std::same_as<std::remove_cvref_t<T>, int> ||
+    std::same_as<std::remove_cvref_t<T>, std::string> ||
+    std::same_as<std::remove_cvref_t<T>, const char*> || std::same_as<T, const char*> ||
+    (std::is_array_v<std::remove_reference_t<T>> &&
+     std::same_as<std::remove_extent_t<std::remove_reference_t<T>>, char>);
 
 // Type-safe value class using C++23 features
 class Value {
@@ -49,24 +49,28 @@ private:
 
 public:
     // Using C++23 deducing this feature and concepts
-    Value() : data(0) {}
-    
-    template<ValueType T>
-    explicit Value(T&& value) : data(std::forward<T>(value)) {}
-    
+    Value() : data(0) {
+    }
+
+    template <ValueType T> explicit Value(T&& value) : data(std::forward<T>(value)) {
+    }
+
     // C++23 string literal constructor
-    Value(const char* value) : data(std::string(value)) {}
+    Value(const char* value) : data(std::string(value)) {
+    }
 
     // Get type (using C++23 if constexpr and visitor pattern)
     DataType getType() const noexcept {
-        return std::visit([](const auto& value) constexpr -> DataType {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::same_as<T, int>) {
-                return DataType::INT;
-            } else if constexpr (std::same_as<T, std::string>) {
-                return DataType::STR;
-            }
-        }, data);
+        return std::visit(
+            [](const auto& value) constexpr -> DataType {
+                using T = std::decay_t<decltype(value)>;
+                if constexpr (std::same_as<T, int>) {
+                    return DataType::INT;
+                } else if constexpr (std::same_as<T, std::string>) {
+                    return DataType::STR;
+                }
+            },
+            data);
     }
 
 #if HAS_EXPECTED
@@ -127,56 +131,62 @@ public:
         if (getType() != other.getType()) {
             throw std::runtime_error("Cannot compare values of different types");
         }
-        
-        return std::visit([&other](const auto& value) -> std::strong_ordering {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::same_as<T, int>) {
-                return value <=> std::get<int>(other.data);
-            } else if constexpr (std::same_as<T, std::string>) {
-                return value <=> std::get<std::string>(other.data);
-            }
-            __builtin_unreachable();
-        }, data);
+
+        return std::visit(
+            [&other](const auto& value) -> std::strong_ordering {
+                using T = std::decay_t<decltype(value)>;
+                if constexpr (std::same_as<T, int>) {
+                    return value <=> std::get<int>(other.data);
+                } else if constexpr (std::same_as<T, std::string>) {
+                    return value <=> std::get<std::string>(other.data);
+                }
+                __builtin_unreachable();
+            },
+            data);
     }
 
-    // Equality operator needs separate implementation as variant doesn't support defaulted comparison
+    // Equality operator needs separate implementation as variant doesn't support defaulted
+    // comparison
     bool operator==(const Value& other) const {
         return data == other.data;
     }
 
     // Stream output - declared as friend to access private members
     friend std::ostream& operator<<(std::ostream& os, const Value& value);
-    
+
     // String representation (compatible with C++23 std::format)
     std::string toString() const {
-        return std::visit([](const auto& value) -> std::string {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::same_as<T, int>) {
+        return std::visit(
+            [](const auto& value) -> std::string {
+                using T = std::decay_t<decltype(value)>;
+                if constexpr (std::same_as<T, int>) {
 #if HAS_FORMAT
-                return std::format("{}", value);
+                    return std::format("{}", value);
 #else
-                return std::to_string(value);
+                    return std::to_string(value);
 #endif
-            } else if constexpr (std::same_as<T, std::string>) {
-                return value;
-            }
-            __builtin_unreachable();
-        }, data);
+                } else if constexpr (std::same_as<T, std::string>) {
+                    return value;
+                }
+                __builtin_unreachable();
+            },
+            data);
     }
 
 #if HAS_FORMAT
     // C++23 format support
-    template<typename FormatContext>
-    auto format(FormatContext& ctx) const {
-        return std::visit([&ctx](const auto& value) {
-            using T = std::decay_t<decltype(value)>;
-            if constexpr (std::same_as<T, int>) {
-                return std::format_to(ctx.out(), "{}", value);
-            } else if constexpr (std::same_as<T, std::string>) {
-                return std::format_to(ctx.out(), "\"{}\"", value);
-            }
-            __builtin_unreachable();
-        }, data);
+    template <typename FormatContext> auto format(FormatContext& ctx) const {
+        return std::visit(
+            [&ctx](const auto& value) {
+                using T = std::decay_t<decltype(value)>;
+                if constexpr (std::same_as<T, int>) {
+                    return std::format_to(ctx.out(), "{}", value);
+                } else if constexpr (std::same_as<T, std::string>) {
+                    return std::format_to(ctx.out(), "\"{}\"", value);
+                }
+                __builtin_unreachable();
+            },
+            data);
     }
 #endif
 };
@@ -185,11 +195,12 @@ public:
 struct Column {
     std::string name;
     DataType type;
-    
+
     // C++23 designated initializers support
-    Column(const std::string& columnName, DataType columnType) 
-        : name(columnName), type(columnType) {}
-    
+    Column(const std::string& columnName, DataType columnType)
+        : name(columnName), type(columnType) {
+    }
+
     // Using C++23 defaulted spaceship operator
     auto operator<=>(const Column& other) const = default;
 };
